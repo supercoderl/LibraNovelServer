@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraNovel.Application", "LibraNovel.Application\LibraNovel.Application.csproj", "{016BD44C-0A2E-43B4-BDF6-CDF1F288C0F9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraNovel.Domain", "LibraNovel.Domain\LibraNovel.Domain.csproj", "{EE378B85-89D2-4D48-B18D-0C8D5FA4206C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraNovel.Infrastructure.Data", "LibraNovel.Infrastructure.Data\LibraNovel.Infrastructure.Data.csproj", "{0670EC2B-594D-49B8-8B59-D323756CAF90}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraNovel.Infrastructure.IoC", "LibraNovel.Infrastructure.IoC\LibraNovel.Infrastructure.IoC.csproj", "{E57F9815-81FD-4B37-A62F-833C19FCAB50}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraNovel.Tests.XUnit", "LibraNovel.Tests.XUnit\LibraNovel.Tests.XUnit.csproj", "{20EF566C-0B35-459E-AF2E-871D15C8B646}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraNovel.WebAPI", "LibraNovel.WebAPI\LibraNovel.WebAPI.csproj", "{DE51BE37-76C4-4738-B682-5D0D9E113D84}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{016BD44C-0A2E-43B4-BDF6-CDF1F288C0F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{016BD44C-0A2E-43B4-BDF6-CDF1F288C0F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{016BD44C-0A2E-43B4-BDF6-CDF1F288C0F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{016BD44C-0A2E-43B4-BDF6-CDF1F288C0F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE378B85-89D2-4D48-B18D-0C8D5FA4206C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE378B85-89D2-4D48-B18D-0C8D5FA4206C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE378B85-89D2-4D48-B18D-0C8D5FA4206C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE378B85-89D2-4D48-B18D-0C8D5FA4206C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0670EC2B-594D-49B8-8B59-D323756CAF90}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0670EC2B-594D-49B8-8B59-D323756CAF90}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0670EC2B-594D-49B8-8B59-D323756CAF90}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0670EC2B-594D-49B8-8B59-D323756CAF90}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E57F9815-81FD-4B37-A62F-833C19FCAB50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E57F9815-81FD-4B37-A62F-833C19FCAB50}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E57F9815-81FD-4B37-A62F-833C19FCAB50}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E57F9815-81FD-4B37-A62F-833C19FCAB50}.Release|Any CPU.Build.0 = Release|Any CPU
+		{20EF566C-0B35-459E-AF2E-871D15C8B646}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20EF566C-0B35-459E-AF2E-871D15C8B646}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20EF566C-0B35-459E-AF2E-871D15C8B646}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20EF566C-0B35-459E-AF2E-871D15C8B646}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE51BE37-76C4-4738-B682-5D0D9E113D84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE51BE37-76C4-4738-B682-5D0D9E113D84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE51BE37-76C4-4738-B682-5D0D9E113D84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE51BE37-76C4-4738-B682-5D0D9E113D84}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {23DEB649-9B93-4131-A340-4F0BC3781AC5}
+	EndGlobalSection
+EndGlobal

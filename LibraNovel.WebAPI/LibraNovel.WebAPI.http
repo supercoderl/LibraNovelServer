@@ -1,0 +1,6 @@
+@LibraNovel.WebAPI_HostAddress = http://localhost:5226
+
+GET {{LibraNovel.WebAPI_HostAddress}}/
+Accept: application/json
+
+###
