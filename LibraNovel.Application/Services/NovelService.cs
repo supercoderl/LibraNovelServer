@@ -145,7 +145,7 @@ namespace LibraNovel.Application.Services
 
             foreach (var novel in noveslMapping)
             {
-                var userResult = novel.PublisherID != null ? await _userService.GetUserByID(novel.PublisherID.Value) : null;
+                var userResult = novel.PublisherID != null ? await _userService.GetUserByIDORCode(novel.PublisherID.Value, null) : null;
                 if (userResult != null)
                 {
                     novel.User = userResult.Data;

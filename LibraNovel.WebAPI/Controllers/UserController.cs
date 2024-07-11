@@ -64,10 +64,10 @@ namespace LibraNovel.WebAPI.Controllers
             return Ok(await _userService.GetAllUsers(pageIndex, pageSize)); 
         }
 
-        [HttpGet("/get-user-by-id/{userID}")]
-        public async Task<IActionResult> GetUserByID(Guid userID)
+        [HttpGet("/get-user-by-id-or-code")]
+        public async Task<IActionResult> GetUserByIDORCode(Guid? userID, string? code)
         {
-            return Ok(await _userService.GetUserByID(userID));  
+            return Ok(await _userService.GetUserByIDORCode(userID, code));  
         }
 
         [HttpGet("/get-profile")]
@@ -78,7 +78,7 @@ namespace LibraNovel.WebAPI.Controllers
             {
                 return Unauthorized();
             }
-            return Ok(await _userService.GetUserByID(Guid.Parse(userID)));
+            return Ok(await _userService.GetUserByIDORCode(Guid.Parse(userID), null));
         }
 
         [HttpPost("/create-mapping-user-with-roles")]

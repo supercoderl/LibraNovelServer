@@ -17,7 +17,7 @@ namespace LibraNovel.Application.Interfaces
         Task<Response<string>> Register(RegisterViewModel request);
         Task<Response<string>> RevokeToken(string token);
         Task<Response<RequestParameter<UserInformation>>> GetAllUsers(int pageIndex, int pageSize);
-        Task<Response<UserInformation>> GetUserByID(Guid userID);
+        Task<Response<UserInformation>> GetUserByIDORCode(Guid? userID, string? code);
         Task<Response<string>> UpdateInformation(Guid userID, IFormFile? file, UpdateUserViewModel request);
         Task<Response<string>> ChangePassword(Guid userID, ChangePasswordViewModel request);
         Task<Response<string>> DeleteUser(Guid userID);

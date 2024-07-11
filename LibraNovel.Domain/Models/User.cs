@@ -37,6 +37,10 @@ public partial class User
     public string LastName { get; set; }
 
     [StringLength(10)]
+    [Unicode(false)]
+    public string UserCode { get; set; }
+
+    [StringLength(10)]
     public string Gender { get; set; }
 
     public bool IsActive { get; set; }

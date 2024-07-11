@@ -266,7 +266,7 @@ public partial class LibraNovelContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserID).HasName("PK__User__1788CCAC6B914AE1");
+            entity.HasKey(e => e.UserID).HasName("PK__tmp_ms_x__1788CCACBE19ECCC");
 
             entity.ToTable("User", tb => tb.HasTrigger("tg_delete_user"));
 
@@ -287,6 +287,9 @@ public partial class LibraNovelContext : DbContext
                 .IsRequired()
                 .IsUnicode(false);
             entity.Property(e => e.RegistrationDate).HasColumnType("datetime");
+            entity.Property(e => e.UserCode)
+                .HasMaxLength(10)
+                .IsUnicode(false);
         });
 
         modelBuilder.Entity<UsersRole>(entity =>

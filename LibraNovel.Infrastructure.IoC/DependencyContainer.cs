@@ -39,6 +39,7 @@ namespace LibraNovel.Infrastructure.IoC
             services.AddScoped<IMenuService, MenuService>();
             services.AddScoped<ITokenCache, TokenCache>();
             services.AddScoped<IPermissionService, PermissionService>();
+            services.AddScoped<IQRCodeService, QRCodeService>();
         }
 
         public static void AddDatabaseServices(this IServiceCollection services, IConfiguration configuration)

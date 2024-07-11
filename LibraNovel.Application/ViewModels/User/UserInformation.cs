@@ -14,8 +14,10 @@ namespace LibraNovel.Application.ViewModels.User
         public string PasswordHash { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public string? UserCode { get; set; }
         public string Gender { get; set; }
         public int IsActive { get; set; }
+        public DateTime RegistrationDate { get; set; }
 
         public List<string>? Roles { get; set; }
     }

@@ -364,20 +364,23 @@ namespace LibraNovel.Application.Services
             };
         }
 
-        public async Task<Response<UserInformation>> GetUserByID(Guid userID)
+        public async Task<Response<UserInformation>> GetUserByIDORCode(Guid? userID, string? code)
         {
-            var user = await _context.Users.FindAsync(userID);
+            var user = await _context.Users.FirstOrDefaultAsync(u => userID != null ? u.UserID == userID : u.UserCode == code);
             if(user == null)
             {
                 throw new ApiException("Người dùng không tồn tại");
             }
 
-            var roles = await _roleService.GetMappingRoles(userID);
             var userDTO = _mapper.Map<UserInformation>(user);
 
-            if(roles.Succeeded)
+            if(userID != null)
             {
-                userDTO.Roles = roles.Data.Select(r => r.RoleID.ToString()).ToList();
+                var roles = await _roleService.GetMappingRoles((Guid)userID);
+                if (roles.Succeeded)
+                {
+                    userDTO.Roles = roles.Data.Select(r => r.RoleID.ToString()).ToList();
+                }
             }
 
             return new Response<UserInformation>(userDTO, null);
