@@ -35,6 +35,7 @@ namespace LibraNovel.WebAPI.Controllers
         [HttpPost("/login")]
         public async Task<IActionResult> Login(LoginViewModel request)
         {
+            request.Provider = "email";
             return Ok(await _userService.Login(request, GenerateIPAddress()));
         }
 
