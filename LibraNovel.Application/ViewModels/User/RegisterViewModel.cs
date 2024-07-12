@@ -12,11 +12,13 @@ namespace LibraNovel.Application.ViewModels.User
         [Required(ErrorMessage = "The password is required")]
         public string PasswordHash { get; set; }
 
+        public string? Avatar {  get; set; }
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? UserCode { get; set; }
         public string? Gender { get; set; }
-        public int? IsActive { get; set; } = 1;
+        public string? Provider { get; set; }
+        public bool? IsActive { get; set; } = true;
         public DateTime? RegistrationDate { get; set; } = DateTime.Now;
     }
 }

@@ -43,6 +43,10 @@ public partial class User
     [StringLength(10)]
     public string Gender { get; set; }
 
+    [StringLength(50)]
+    [Unicode(false)]
+    public string Provider { get; set; }
+
     public bool IsActive { get; set; }
 
     [InverseProperty("User")]

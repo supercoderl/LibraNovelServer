@@ -38,6 +38,13 @@ namespace LibraNovel.WebAPI.Controllers
             return Ok(await _userService.Login(request, GenerateIPAddress()));
         }
 
+        [AllowAnonymous]
+        [HttpPost("/login-by-provider")]
+        public async Task<IActionResult> LoginByProvider(LoginProviderViewModel request)
+        {
+            return Ok(await _userService.LoginByProvider(request, GenerateIPAddress()));
+        }
+
         [HttpPut("/change-avatar/{userID}")]
         public async Task<IActionResult> ChangeAvatar(Guid userID, IFormFile file)
         {

@@ -82,18 +82,18 @@ namespace LibraNovel.Application.Services
 
         public async Task<Response<LoginResponse>> Login(LoginViewModel request, string ipAddress)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && u.Provider == request.Provider);
             if (user == null)
             {
                 throw new ApiException($"Email không tồn tại trong hệ thống.");
             }
 
-            if(!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            if (request.Provider == "email" && !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
                 throw new ApiException("Sai mật khẩu!");
             }
 
-            if(!user.IsActive)
+            if (!user.IsActive)
             {
                 throw new ApiException("Tài khoản của bạn đã bị khóa!");
             }
@@ -126,12 +126,12 @@ namespace LibraNovel.Application.Services
 
         public async Task<Response<string>> Register(RegisterViewModel request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-            if(user != null)
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && u.Provider == request.Provider);
+            if (user != null)
             {
                 throw new ApiException($"Email {request.Email} đã được sử dụng.");
             }
-            
+
             request.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.PasswordHash);
 
             var checkAnyUserHaveRole = await _roleService.CheckAnyUserHaveRole();
@@ -143,7 +143,7 @@ namespace LibraNovel.Application.Services
 
             if (checkAnyUserHaveRole.Data)
             {
-                await CreateMappingUserWithRoles(new CreateUsersRolesViewModel 
+                await CreateMappingUserWithRoles(new CreateUsersRolesViewModel
                 { UserID = newUser.UserID, Roles = ["3"], CreatedDate = DateTime.Now });
             }
             else
@@ -186,7 +186,7 @@ namespace LibraNovel.Application.Services
 
         public async Task<Response<string>> UpdateInformation(Guid userID, IFormFile? file, UpdateUserViewModel request)
         {
-            if(userID != request.UserID)
+            if (userID != request.UserID)
             {
                 throw new ApiException("Người dùng không hợp lệ");
             }
@@ -197,7 +197,7 @@ namespace LibraNovel.Application.Services
             }
             _mapper.Map(request, user);
 
-            if(file != null)
+            if (file != null)
             {
                 var imageResult = await _imageService.UploadImage(file);
 
@@ -228,11 +228,11 @@ namespace LibraNovel.Application.Services
         private async Task<Response<LoginResponse>> RefreshToken(string refreshToken, DateTime now)
         {
             var refreshTokenObject = await _context.Tokens.FirstOrDefaultAsync(x => x.RefreshToken == refreshToken && x.IsActive && x.RevokeAt == null);
-            if(refreshTokenObject != null)
+            if (refreshTokenObject != null)
             {
                 var user = await _context.Users.FindAsync(refreshTokenObject.UserID);
 
-                if(user == null)
+                if (user == null)
                 {
                     return new Response<LoginResponse>("Người dùng không tồn tại.");
                 }
@@ -339,12 +339,12 @@ namespace LibraNovel.Application.Services
 
             var usersDTO = users.Select(u => _mapper.Map<UserInformation>(u)).ToList();
 
-            if(usersDTO.Any())
+            if (usersDTO.Any())
             {
-                foreach(var user in usersDTO)
+                foreach (var user in usersDTO)
                 {
                     var roles = await _roleService.GetMappingRoles(user.UserID);
-                    if(roles.Succeeded)
+                    if (roles.Succeeded)
                     {
                         user.Roles = roles.Data.Select(r => r.RoleID.ToString()).ToList();
                     }
@@ -367,14 +367,14 @@ namespace LibraNovel.Application.Services
         public async Task<Response<UserInformation>> GetUserByIDORCode(Guid? userID, string? code)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => userID != null ? u.UserID == userID : u.UserCode == code);
-            if(user == null)
+            if (user == null)
             {
                 throw new ApiException("Người dùng không tồn tại");
             }
 
             var userDTO = _mapper.Map<UserInformation>(user);
 
-            if(userID != null)
+            if (userID != null)
             {
                 var roles = await _roleService.GetMappingRoles((Guid)userID);
                 if (roles.Succeeded)
@@ -389,7 +389,7 @@ namespace LibraNovel.Application.Services
         async Task<Response<string>> IUserService.RevokeToken(string token)
         {
             var refreshToken = await _context.Tokens.FirstOrDefaultAsync(t => t.RefreshToken == token);
-            if(refreshToken == null)
+            if (refreshToken == null)
             {
                 return new Response<string>(string.Empty);
             }
@@ -404,13 +404,13 @@ namespace LibraNovel.Application.Services
         public async Task<Response<string>> UpdateAvatar(Guid userID, IFormFile file)
         {
             var user = await _context.Users.FindAsync(userID);
-            if(user == null)
+            if (user == null)
             {
                 throw new ApiException("Người dùng không tồn tại");
             }
 
             var imageResult = await _imageService.UploadImage(file);
-            if(imageResult != null && imageResult.Data != null)
+            if (imageResult != null && imageResult.Data != null)
             {
                 user.Avatar = imageResult.Data;
             }
@@ -479,6 +479,48 @@ namespace LibraNovel.Application.Services
                 }
             }
             return toRemove;
+        }
+
+        public async Task<Response<LoginResponse>> LoginByProvider(LoginProviderViewModel request, string ipAddress)
+        {
+            if (request.Email == null)
+            {
+                return new Response<LoginResponse>("Không có người dùng nào");
+            }
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && u.Provider == request.Provider);
+            if (user == null)
+            {
+                RegisterViewModel newUser = new RegisterViewModel
+                {
+                    Email = request.Email,
+                    Provider = request.Provider,
+                    Avatar = request.Avatar,
+                    PasswordHash = request.UserID ?? "password",
+                    FirstName = request.FirstName,
+                    LastName = request.LastName,
+                    UserCode = request.UserCode
+                };
+
+                var result = await Register(newUser);
+                if (!result.Succeeded)
+                {
+                    return new Response<LoginResponse>(result.Message);
+                }
+
+                return await Login(new LoginViewModel
+                {
+                    Email = request.Email,
+                    Password = request.UserID ?? "",
+                    Provider = request.Provider
+                }, ipAddress);
+            }
+
+            return await Login(new LoginViewModel
+            {
+                Email = request.Email,
+                Password = request.UserID ?? "",
+                Provider = request.Provider
+            }, ipAddress);
         }
     }
 }
