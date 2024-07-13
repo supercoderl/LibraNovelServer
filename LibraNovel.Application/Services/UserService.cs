@@ -48,6 +48,7 @@ namespace LibraNovel.Application.Services
             _tokenCache = tokenCache;
         }
 
+        //Change Password Service
         public async Task<Response<string>> ChangePassword(Guid userID, ChangePasswordViewModel request)
         {
             var user = await _context.Users.FindAsync(userID);
@@ -67,6 +68,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Đổi mật khẩu thành công.", null);
         }
 
+        //Delete User Service
         public async Task<Response<string>> DeleteUser(Guid userID)
         {
             var user = await _context.Users.FindAsync(userID);
@@ -80,6 +82,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa tài khoản thành công", null);
         }
 
+        //Login Service
         public async Task<Response<LoginResponse>> Login(LoginViewModel request, string ipAddress)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && u.Provider == request.Provider);
@@ -124,12 +127,23 @@ namespace LibraNovel.Application.Services
             return new Response<LoginResponse>(result, $"Đăng nhập thành công.");
         }
 
-        public async Task<Response<string>> Register(RegisterViewModel request)
+        //Register Service
+        public async Task<Response<string>> Register(IFormFile? file, RegisterViewModel request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && u.Provider == request.Provider);
             if (user != null)
             {
                 throw new ApiException($"Email {request.Email} đã được sử dụng.");
+            }
+
+            if (file != null)
+            {
+                var imageResult = await _imageService.UploadImage(file);
+
+                if (imageResult.Succeeded && imageResult.Data != null)
+                {
+                    request.Avatar = imageResult.Data;
+                }
             }
 
             request.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.PasswordHash);
@@ -155,6 +169,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Đăng ký thành công", null);
         }
 
+        //Send Reset Service
         public async Task<Response<string>> SendResetCode(ResetPasswordEmail request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -176,6 +191,8 @@ namespace LibraNovel.Application.Services
 
             return await _emailService.SendEmail(message);
         }
+
+        //Generate Code Service
         private static string GenerateCode()
         {
             int randomNumber = random.Next(100000, 999999);
@@ -183,7 +200,7 @@ namespace LibraNovel.Application.Services
             return code;
         }
 
-
+        //Update Information Service
         public async Task<Response<string>> UpdateInformation(Guid userID, IFormFile? file, UpdateUserViewModel request)
         {
             if (userID != request.UserID)
@@ -212,11 +229,13 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Cập nhật thành công", null);
         }
 
+        //Verify Reset Code Service
         public Task<Response<string>> VerifyResetCode(VerifyResetPasswordCode request)
         {
             throw new NotImplementedException();
         }
 
+        //Generate Refresh Token Service
         private string GenerateRefreshToken()
         {
             var randomNumber = new Byte[32];
@@ -225,6 +244,7 @@ namespace LibraNovel.Application.Services
             return Convert.ToBase64String(randomNumber);
         }
 
+        //Refresh Token Service
         private async Task<Response<LoginResponse>> RefreshToken(string refreshToken, DateTime now)
         {
             var refreshTokenObject = await _context.Tokens.FirstOrDefaultAsync(x => x.RefreshToken == refreshToken && x.IsActive && x.RevokeAt == null);
@@ -257,11 +277,13 @@ namespace LibraNovel.Application.Services
             return new Response<LoginResponse>("Token không tồn tại.");
         }
 
+        //Get Token Async Service
         public async Task<Response<LoginResponse>> GetTokenAsync(string refreshToken, DateTime now)
         {
             return await _tokenCache.GetTokenAsync(RefreshToken, refreshToken, now);
         }
 
+        //Generate Token Service
         private async Task<LoginResponse> GenerateToken(User user, List<Claim> claims, DateTime now)
         {
             var shouldAddAudienceClaim = string.IsNullOrWhiteSpace(
@@ -303,6 +325,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Store Refresh Token Service
         private async Task<bool> StoreRefreshToken(string token, Guid userID)
         {
             Token newToken = new Token
@@ -317,6 +340,7 @@ namespace LibraNovel.Application.Services
             return true;
         }
 
+        //Revoke Token Service
         private async Task<bool> RevokeToken(string token)
         {
             var item = await _context.Tokens.FirstOrDefaultAsync(x => x.RefreshToken.Equals(token));
@@ -333,6 +357,7 @@ namespace LibraNovel.Application.Services
             return true;
         }
 
+        //Get All Users Service
         public async Task<Response<RequestParameter<UserInformation>>> GetAllUsers(int pageIndex, int pageSize)
         {
             var users = await _context.Users.OrderBy(u => u.UserID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -364,6 +389,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Get User By ID OR Code Service
         public async Task<Response<UserInformation>> GetUserByIDORCode(Guid? userID, string? code)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => userID != null ? u.UserID == userID : u.UserCode == code);
@@ -386,6 +412,7 @@ namespace LibraNovel.Application.Services
             return new Response<UserInformation>(userDTO, null);
         }
 
+        //Revoke Token Service
         async Task<Response<string>> IUserService.RevokeToken(string token)
         {
             var refreshToken = await _context.Tokens.FirstOrDefaultAsync(t => t.RefreshToken == token);
@@ -401,6 +428,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Đăng xuất thành công", null);
         }
 
+        //Update Avatar Service
         public async Task<Response<string>> UpdateAvatar(Guid userID, IFormFile file)
         {
             var user = await _context.Users.FindAsync(userID);
@@ -420,6 +448,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>(user.Avatar, null);
         }
 
+        //Create Mapping User With Roles Service
         public async Task<Response<string>> CreateMappingUserWithRoles(CreateUsersRolesViewModel request)
         {
             //User roles = urs
@@ -455,6 +484,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Liên kết người dùng và vai trò thành công", null);
         }
 
+        //Get Add List Service
         private List<int> GetAddList(List<int?> oldRoles, List<int> newRoles)
         {
             List<int> toAdd = new List<int>();
@@ -468,6 +498,7 @@ namespace LibraNovel.Application.Services
             return toAdd;
         }
 
+        //Get Remove List Service
         private List<int> GetRemoveList(List<int?> oleRoles, List<int> newRoles)
         {
             List<int> toRemove = new List<int>();
@@ -481,6 +512,7 @@ namespace LibraNovel.Application.Services
             return toRemove;
         }
 
+        //Login By Provider Service
         public async Task<Response<LoginResponse>> LoginByProvider(LoginProviderViewModel request, string ipAddress)
         {
             if (request.Email == null)
@@ -501,7 +533,7 @@ namespace LibraNovel.Application.Services
                     UserCode = request.UserCode
                 };
 
-                var result = await Register(newUser);
+                var result = await Register(null, newUser);
                 if (!result.Succeeded)
                 {
                     return new Response<LoginResponse>(result.Message);

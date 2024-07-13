@@ -26,9 +26,10 @@ namespace LibraNovel.WebAPI.Controllers
 
         [AllowAnonymous]
         [HttpPost("/register")]
-        public async Task<IActionResult> Register(RegisterViewModel request)
+        public async Task<IActionResult> Register(IFormFile? file, [FromForm] RegisterViewModel request)
         {
-            return Ok(await _userService.Register(request));
+            request.Provider = "email";
+            return Ok(await _userService.Register(file, request));
         }
 
         [AllowAnonymous]

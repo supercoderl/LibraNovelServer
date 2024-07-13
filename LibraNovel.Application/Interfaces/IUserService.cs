@@ -15,7 +15,7 @@ namespace LibraNovel.Application.Interfaces
     {
         Task<Response<LoginResponse>> Login(LoginViewModel request, string ipAddress);
         Task<Response<LoginResponse>> LoginByProvider(LoginProviderViewModel request, string ipAddress);
-        Task<Response<string>> Register(RegisterViewModel request);
+        Task<Response<string>> Register(IFormFile? file, RegisterViewModel request);
         Task<Response<string>> RevokeToken(string token);
         Task<Response<RequestParameter<UserInformation>>> GetAllUsers(int pageIndex, int pageSize);
         Task<Response<UserInformation>> GetUserByIDORCode(Guid? userID, string? code);
