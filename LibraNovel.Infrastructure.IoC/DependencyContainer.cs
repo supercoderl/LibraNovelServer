@@ -46,7 +46,7 @@ namespace LibraNovel.Infrastructure.IoC
         {
             //Database
             services.AddDbContext<LibraNovelContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Transient);
         }
 
         public static void AddAspNetCoreServices(this IServiceCollection services)

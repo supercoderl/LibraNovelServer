@@ -2,12 +2,17 @@
 using LibraNovel.Application.Exceptions;
 using LibraNovel.Application.Interfaces;
 using LibraNovel.Application.Parameters;
+using LibraNovel.Application.ViewModels.Chapter;
 using LibraNovel.Application.ViewModels.Novel;
+using LibraNovel.Application.ViewModels.User;
 using LibraNovel.Application.Wrappers;
 using LibraNovel.Domain.Models;
 using LibraNovel.Infrastructure.Data.Context;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using System.Diagnostics;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LibraNovel.Application.Services
 {
@@ -121,31 +126,57 @@ namespace LibraNovel.Application.Services
 
         public async Task<Response<RequestParameter<NovelResponse>>> GetNovels(int pageIndex, int pageSize, int? genreID, Guid? userID)
         {
-            var novels = await _context.Novels.Where(n => n.DeletedDate == null).OrderBy(n => n.NovelID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+            var stopwatch = Stopwatch.StartNew();
+
+            var query = _context.Novels.AsNoTracking().Where(n => n.DeletedDate == null);
+
+            query = FilterNovels(query, genreID, userID);
+
+            var novels = await query.OrderBy(n => n.NovelID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
             var totalCount = await _context.Novels.CountAsync();
 
-            if(genreID != null || userID != null)
+            var novelIDs = novels.Select(n => n.NovelID).ToList();
+            var publisherIDs = novels.Where(n => n.PublisherID != null)
+                                     .Select(n => n.PublisherID!.Value)
+                                     .Distinct()
+                                     .ToList();
+
+            // Fetch related data in parallel
+            var usersTask = await _userService.GetUserByIDs(publisherIDs);
+            RequestParameter<ChapterResponse> chapters = new RequestParameter<ChapterResponse>();
+
+            foreach(var id in novelIDs)
             {
-                novels = FilterNovels(novels, genreID, userID);
-                totalCount = await CountData(genreID, userID);
-            }
-
-            var noveslMapping = novels.Select(n => _mapper.Map<NovelResponse>(n)).ToList();
-
-            foreach (var novel in noveslMapping)
-            {
-                var userResult = novel.PublisherID != null ? await _userService.GetUserByIDORCode(novel.PublisherID.Value, null) : null;
-                if (userResult != null)
+                var result = await _chapterService.GetAllChapters(1, 5, id);
+                if(result.Succeeded && result.Data != null)
                 {
-                    novel.User = userResult.Data;
-                }
-
-                var chaptersResult = await _chapterService.GetAllChapters(1, 5, novel.NovelID);
-                if (chaptersResult != null && chaptersResult.Data != null && chaptersResult.Data.Items != null && chaptersResult.Data.Items.Any())
-                {
-                    novel.Chapter = chaptersResult.Data.Items;
+                    chapters = result.Data;
                 }
             }
+
+            var novelResponses = novels.Select(novel =>
+            {
+                var novelResponse = _mapper.Map<NovelResponse>(novel);
+
+                if (novel.PublisherID.HasValue)
+                {
+                    novelResponse.User = usersTask.Data.FirstOrDefault(u => u.UserID == novel.PublisherID.Value);
+                }
+
+                if(chapters.Items != null && chapters.Items.Any())
+                {
+                    var chapterResult = chapters.Items.Where(c => c.NovelID == novel.NovelID).ToList();
+                    if (chapterResult != null)
+                    {
+                        novelResponse.Chapter = chapterResult;
+                    }
+                }
+
+                return novelResponse;
+            }).ToList();
+
+            stopwatch.Stop();
+            var executionTime = stopwatch.Elapsed;
 
             return new Response<RequestParameter<NovelResponse>>
             {
@@ -155,8 +186,9 @@ namespace LibraNovel.Application.Services
                     TotalItemsCount = totalCount,
                     PageSize = pageSize,
                     PageIndex = pageIndex,
-                    Items = novels.Select(n => _mapper.Map<NovelResponse>(n)).ToList()
-                }
+                    Items = novelResponses
+                },
+                Message = $"GetNovels method executed in {executionTime.TotalMilliseconds} ms"
             };
         }
 
@@ -223,12 +255,11 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa truyện thành công.", null);
         }
 
-        private List<Novel> FilterNovels(List<Novel> data, int? genreID, Guid? userID)
+        private IQueryable<Novel> FilterNovels(IQueryable<Novel> query, int? genreID, Guid? userID)
         {
-            List<Novel> novels = new List<Novel>();
-            if (genreID != null && genreID != -1)
+            if (genreID.HasValue && genreID != -1)
             {
-                novels = data.
+                query = query.
                     Join(
                         _context.NovelGenres,
                         n => n.NovelID,
@@ -240,13 +271,15 @@ namespace LibraNovel.Application.Services
                         ng => ng.NovelGenre.GenreID,
                         g => g.GenreID,
                         (ng, g) => new { Novel = ng.Novel, Genre = g }
-                    ).Where(ng => ng.Genre.GenreID == genreID).Select(ng => ng.Novel).ToList();
+                    ).Where(ng => ng.Genre.GenreID == genreID).Select(ng => ng.Novel);
             }
-            if(userID != null)
+
+            if (userID.HasValue)
             {
-                novels = data.Where(n => n.PublisherID == userID).ToList();
+                query = query.Where(n => n.PublisherID == userID);
             }
-            return novels;
+
+            return query;
         }
 
         private async Task<int> CountData(int? genreID, Guid? userID)
@@ -270,7 +303,7 @@ namespace LibraNovel.Application.Services
                 .Where(ng => ng.Genre.GenreID == genreID)
                 .CountAsync();
             }
-            if(userID != null)
+            if (userID != null)
             {
                 totalCount = await _context.Novels.Where(n => n.PublisherID == userID).CountAsync();
             }

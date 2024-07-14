@@ -554,5 +554,30 @@ namespace LibraNovel.Application.Services
                 Provider = request.Provider
             }, ipAddress);
         }
+
+        public async Task<Response<List<UserInformation>>> GetUserByIDs(List<Guid> userIDs)
+        {
+            if (userIDs == null || !userIDs.Any())
+            {
+                return new Response<List<UserInformation>>
+                {
+                    Succeeded = false,
+                    Message = "No user IDs provided.",
+                    Data = new List<UserInformation>()
+                };
+            }
+
+            var users = await _context.Users.AsNoTracking()
+                                            .Where(u => userIDs.Contains(u.UserID))
+                                            .ToListAsync();
+
+            var userInformations = users.Select(u => _mapper.Map<UserInformation>(u)).ToList();
+
+            return new Response<List<UserInformation>>
+            {
+                Succeeded = true,
+                Data = userInformations
+            };
+        }
     }
 }
