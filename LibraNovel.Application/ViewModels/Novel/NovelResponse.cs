@@ -23,7 +23,7 @@ namespace LibraNovel.Application.ViewModels.Novel
         public Guid? PublisherID { get; set; }
         
         public UserInformation? User { get; set; }
-        public IReadOnlyList<ChapterResponse>? Chapter { get; set; }
+        public List<ChapterResponse>? Chapter { get; set; }
 
         public string? Status { get; set; }
         public DateTime UpdatedDate { get; set; }

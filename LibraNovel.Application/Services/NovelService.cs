@@ -11,6 +11,8 @@ using LibraNovel.Infrastructure.Data.Context;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Caching.Memory;
+using System.Collections.Generic;
 using System.Diagnostics;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -23,14 +25,16 @@ namespace LibraNovel.Application.Services
         private readonly IUserService _userService;
         private readonly IChapterService _chapterService;
         private readonly IImageService _imageService;
+        private readonly IMemoryCache _cache;
 
-        public NovelService(LibraNovelContext context, IMapper mapper, IUserService userService, IChapterService chapterService, IImageService imageService)
+        public NovelService(LibraNovelContext context, IMapper mapper, IUserService userService, IChapterService chapterService, IImageService imageService, IMemoryCache cache)
         {
             _context = context;
             _mapper = mapper;
             _userService = userService;
             _chapterService = chapterService;
             _imageService = imageService;
+            _cache = cache;
         }
 
         public async Task<Response<string>> CreateMappingGenreWithNovel(int genreID, int novelID)
@@ -126,54 +130,82 @@ namespace LibraNovel.Application.Services
 
         public async Task<Response<RequestParameter<NovelResponse>>> GetNovels(int pageIndex, int pageSize, int? genreID, Guid? userID)
         {
+            List<int> novelIDs = new List<int>();
+            List<Guid> publisherIDs = new List<Guid>();
+            List<NovelResponse>? novelResponses = new List<NovelResponse>();
+
+
             var stopwatch = Stopwatch.StartNew();
 
-            var query = _context.Novels.AsNoTracking().Where(n => n.DeletedDate == null);
+            var cacheKey = $"novels_{pageIndex}_{pageSize}_{genreID}_{userID}";
+            List<Novel>? novels = null;
 
-            query = FilterNovels(query, genreID, userID);
-
-            var novels = await query.OrderBy(n => n.NovelID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
-            var totalCount = await _context.Novels.CountAsync();
-
-            var novelIDs = novels.Select(n => n.NovelID).ToList();
-            var publisherIDs = novels.Where(n => n.PublisherID != null)
-                                     .Select(n => n.PublisherID!.Value)
-                                     .Distinct()
-                                     .ToList();
-
-            // Fetch related data in parallel
-            var usersTask = await _userService.GetUserByIDs(publisherIDs);
-            RequestParameter<ChapterResponse> chapters = new RequestParameter<ChapterResponse>();
-
-            foreach(var id in novelIDs)
+            // Attempt to get novels from cache
+            if (_cache.TryGetValue(cacheKey, out List<NovelResponse>? cachedNovels))
             {
-                var result = await _chapterService.GetAllChapters(1, 5, id);
-                if(result.Succeeded && result.Data != null)
-                {
-                    chapters = result.Data;
-                }
+                novelResponses = cachedNovels;
             }
-
-            var novelResponses = novels.Select(novel =>
+            else
             {
-                var novelResponse = _mapper.Map<NovelResponse>(novel);
+                var query = _context.Novels.AsNoTracking().Where(n => n.DeletedDate == null);
 
-                if (novel.PublisherID.HasValue)
-                {
-                    novelResponse.User = usersTask.Data.FirstOrDefault(u => u.UserID == novel.PublisherID.Value);
-                }
+                query = FilterNovels(query, genreID, userID);
 
-                if(chapters.Items != null && chapters.Items.Any())
+                novels = await query.OrderBy(n => n.NovelID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+
+                if (novels != null)
                 {
-                    var chapterResult = chapters.Items.Where(c => c.NovelID == novel.NovelID).ToList();
-                    if (chapterResult != null)
+                    novelIDs = novels.Select(n => n.NovelID).ToList();
+                    publisherIDs = novels.Where(n => n.PublisherID != null)
+                                         .Select(n => n.PublisherID!.Value)
+                                         .Distinct()
+                                         .ToList();
+
+                    // Fetch related data in parallel
+                    var usersTask = await _userService.GetUserByIDs(publisherIDs);
+                    List<ChapterResponse> chapters = new List<ChapterResponse>();
+
+                    foreach (var id in novelIDs)
                     {
-                        novelResponse.Chapter = chapterResult;
+                        var result = await _chapterService.GetAllChapters(1, 5, id);
+                        if (result.Succeeded && result.Data != null && result.Data.Items != null)
+                        {
+                            foreach (var item in result.Data.Items)
+                            {
+                                chapters.Add(item);
+                            }
+                        }
                     }
+
+                    novelResponses = novels.Select(novel =>
+                    {
+                        var novelResponse = _mapper.Map<NovelResponse>(novel);
+
+                        if (novel.PublisherID.HasValue)
+                        {
+                            novelResponse.User = usersTask.Data.FirstOrDefault(u => u.UserID == novel.PublisherID.Value);
+                        }
+
+                        if (chapters.Any())
+                        {
+                            var chapterResult = chapters.Where(c => c.NovelID == novel.NovelID).ToList();
+                            if (chapterResult != null)
+                            {
+                                novelResponse.Chapter = chapterResult;
+                            }
+                        }
+
+                        return novelResponse;
+                    }).ToList();
                 }
 
-                return novelResponse;
-            }).ToList();
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromMinutes(5));
+
+                // Save data in cache
+                _cache.Set(cacheKey, novelResponses, cacheEntryOptions);
+            }
+            var totalCount = await _context.Novels.CountAsync();
 
             stopwatch.Stop();
             var executionTime = stopwatch.Elapsed;
