@@ -119,26 +119,15 @@ namespace LibraNovel.Application.Services
             return genres;
         }
 
-        public async Task<Response<RequestParameter<NovelResponse>>> GetNovels(int pageIndex, int pageSize, int? genreID)
+        public async Task<Response<RequestParameter<NovelResponse>>> GetNovels(int pageIndex, int pageSize, int? genreID, Guid? userID)
         {
             var novels = await _context.Novels.Where(n => n.DeletedDate == null).OrderBy(n => n.NovelID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
             var totalCount = await _context.Novels.CountAsync();
-    
-            if (genreID != null && genreID != -1)
+
+            if(genreID != null || userID != null)
             {
-                novels = novels.
-                    Join(
-                        _context.NovelGenres,
-                        n => n.NovelID,
-                        ng => ng.NovelID,
-                        (n, ng) => new { Novel = n, NovelGenre = ng }
-                    ).
-                    Join(
-                        _context.Genres,
-                        ng => ng.NovelGenre.GenreID,
-                        g => g.GenreID,
-                        (ng, g) => new { Novel = ng.Novel, Genre = g }
-                    ).Where(ng => ng.Genre.GenreID == genreID).Select(ng => ng.Novel).ToList();
+                novels = FilterNovels(novels, genreID, userID);
+                totalCount = await CountData(genreID, userID);
             }
 
             var noveslMapping = novels.Select(n => _mapper.Map<NovelResponse>(n)).ToList();
@@ -183,8 +172,8 @@ namespace LibraNovel.Application.Services
                 throw new ApiException("Truyện không tồn tại hoặc đã bị xóa.");
             }
             _mapper.Map(request, novel);
-            
-            if(file != null)
+
+            if (file != null)
             {
                 var imageResult = await _imageService.UploadImage(file);
 
@@ -202,7 +191,7 @@ namespace LibraNovel.Application.Services
         public async Task<Response<string>> UpdateCount(int novelID, string type)
         {
             var novel = await _context.Novels.FindAsync(novelID);
-            if(novel == null)
+            if (novel == null)
             {
                 throw new ApiException("Truyện không tồn tại.");
             }
@@ -232,6 +221,60 @@ namespace LibraNovel.Application.Services
             _context.Novels.Remove(novel);
             await _context.SaveChangesAsync();
             return new Response<string>("Xóa truyện thành công.", null);
+        }
+
+        private List<Novel> FilterNovels(List<Novel> data, int? genreID, Guid? userID)
+        {
+            List<Novel> novels = new List<Novel>();
+            if (genreID != null && genreID != -1)
+            {
+                novels = data.
+                    Join(
+                        _context.NovelGenres,
+                        n => n.NovelID,
+                        ng => ng.NovelID,
+                        (n, ng) => new { Novel = n, NovelGenre = ng }
+                    ).
+                    Join(
+                        _context.Genres,
+                        ng => ng.NovelGenre.GenreID,
+                        g => g.GenreID,
+                        (ng, g) => new { Novel = ng.Novel, Genre = g }
+                    ).Where(ng => ng.Genre.GenreID == genreID).Select(ng => ng.Novel).ToList();
+            }
+            if(userID != null)
+            {
+                novels = data.Where(n => n.PublisherID == userID).ToList();
+            }
+            return novels;
+        }
+
+        private async Task<int> CountData(int? genreID, Guid? userID)
+        {
+            int totalCount = 0;
+            if (genreID != null && genreID != -1)
+            {
+                totalCount = await _context.Novels
+                .Join(
+                    _context.NovelGenres,
+                    n => n.NovelID,
+                    ng => ng.NovelID,
+                    (n, ng) => new { Novel = n, NovelGenre = ng }
+                )
+                .Join(
+                   _context.Genres,
+                    ng => ng.NovelGenre.GenreID,
+                    g => g.GenreID,
+                    (ng, g) => new { Novel = ng.Novel, Genre = g }
+                )
+                .Where(ng => ng.Genre.GenreID == genreID)
+                .CountAsync();
+            }
+            if(userID != null)
+            {
+                totalCount = await _context.Novels.Where(n => n.PublisherID == userID).CountAsync();
+            }
+            return totalCount;
         }
     }
 }
