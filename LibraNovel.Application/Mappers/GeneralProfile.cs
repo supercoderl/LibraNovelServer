@@ -34,9 +34,9 @@ namespace LibraNovel.Application.Mappers
             CreateMap<UpdateNovelViewModel, Novel>();
 
             //Mapping chapter
-            CreateMap<CreateChapterViewModel, Chapter>();
-            CreateMap<Chapter, ChapterResponse>();
-            CreateMap<UpdateChapterModel, Chapter>();
+            CreateMap<CreateChapterViewModel, Domain.Models.Chapter>();
+            CreateMap<Domain.Models.Chapter, ChapterResponse>();
+            CreateMap<UpdateChapterModel, Domain.Models.Chapter>();
 
             //Mapping genre
             CreateMap<CreateGenreViewModel, Genre>();

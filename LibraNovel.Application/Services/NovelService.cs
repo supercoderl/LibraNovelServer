@@ -163,48 +163,35 @@ namespace LibraNovel.Application.Services
 
                 query = FilterNovels(query, genreID, userID);
 
-                novels = await query.OrderBy(n => n.NovelID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+                novels = await query.OrderBy(n => n.NovelID)
+                                    .Skip((pageIndex - 1) * pageSize)
+                                    .Take(pageSize)
+                                    .Include(n => n.Chapters)
+                                    .Include(n => n.Publisher)
+                                    .ToListAsync();
 
                 if (novels != null)
                 {
-                    novelIDs = novels.Select(n => n.NovelID).ToList();
-                    publisherIDs = novels.Where(n => n.PublisherID != null)
-                                         .Select(n => n.PublisherID!.Value)
-                                         .Distinct()
-                                         .ToList();
-
-                    // Fetch related data in parallel
-                    var usersTask = await _userService.GetUserByIDs(publisherIDs);
-                    List<ChapterResponse> chapters = new List<ChapterResponse>();
-
-                    foreach (var id in novelIDs)
-                    {
-                        var result = await _chapterService.GetAllChapters(1, 5, id);
-                        if (result.Succeeded && result.Data != null && result.Data.Items != null)
-                        {
-                            foreach (var item in result.Data.Items)
-                            {
-                                chapters.Add(item);
-                            }
-                        }
-                    }
-
                     novelResponses = novels.Select(novel =>
                     {
                         var novelResponse = _mapper.Map<NovelResponse>(novel);
 
-                        if (novel.PublisherID.HasValue)
+                        if(novel.Chapters.Any())
                         {
-                            novelResponse.User = usersTask.Data.FirstOrDefault(u => u.UserID == novel.PublisherID.Value);
+                            novelResponse.Chapter = novel.Chapters.Select(n => new ViewModels.Novel.Chapter
+                            {
+                                ChapterID = n.ChapterID,
+                                ChapterNumber = n.ChapterNumber,
+                            }).ToList();
                         }
 
-                        if (chapters.Any())
+                        if (novel.Publisher != null)
                         {
-                            var chapterResult = chapters.Where(c => c.NovelID == novel.NovelID).ToList();
-                            if (chapterResult != null)
+                            novelResponse.User = new Author
                             {
-                                novelResponse.Chapter = chapterResult;
-                            }
+                                FirstName = novel.Publisher?.FirstName,
+                                LastName = novel.Publisher?.LastName
+                            };
                         }
 
                         return novelResponse;

@@ -22,14 +22,26 @@ namespace LibraNovel.Application.ViewModels.Novel
         public DateTime PublishedDate { get; set; }
         public Guid? PublisherID { get; set; }
         
-        public UserInformation? User { get; set; }
-        public List<ChapterResponse>? Chapter { get; set; }
+        public Author? User { get; set; }
+        public List<Chapter>? Chapter { get; set; }
 
         public string? Status { get; set; }
-        public DateTime UpdatedDate { get; set; }
-        public DateTime DeletedDate { get; set; }
+        public DateTime? UpdatedDate { get; set; }
+        public DateTime? DeletedDate { get; set; }
 
         public IReadOnlyList<string>? Genres { get; set; }
         public IReadOnlyList<NovelGenre>? Mappings { get; set; }
+    }
+
+    public class Author
+    {
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+    }
+
+    public class Chapter
+    {
+        public int ChapterID { get; set; }
+        public int ChapterNumber { get; set; }
     }
 }
