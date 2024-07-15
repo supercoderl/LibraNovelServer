@@ -12,7 +12,7 @@ namespace LibraNovel.Application.Interfaces
 {
     public interface INovelService
     {
-        Task<Response<RequestParameter<NovelResponse>>> GetNovels(int pageIndex, int pageSize, int? genreID, Guid? userID);
+        Task<Response<RequestParameter<NovelResponse>>> GetNovels(int pageIndex, int pageSize, int? genreID, Guid? userID, string? searchText);
         Task<Response<NovelResponse>> GetNovelByID(int novelID);
         Task<Response<string>> CreateMappingGenreWithNovel(int genreID, int novelID);   
         Task<Response<string>> CreateNovel(IFormFile? file, CreateNovelViewModel request);

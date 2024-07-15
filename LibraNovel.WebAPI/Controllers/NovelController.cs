@@ -17,14 +17,14 @@ namespace LibraNovel.WebAPI.Controllers
         }
 
         [HttpGet("/get-novels")]
-        public async Task<IActionResult> GetNovels(int pageIndex = 1, int pageSize = 10, int? genreID = null, bool? isOwner = null)
+        public async Task<IActionResult> GetNovels(int pageIndex = 1, int pageSize = 10, int? genreID = null, bool? isOwner = null, string? searchText = null)
         {
             string? userID = null;
             if(isOwner != null && isOwner == true)
             {
                 userID = User.FindFirstValue("UserID");
             }
-            return Ok(await _novelService.GetNovels(pageIndex, pageSize, genreID, userID != null ? Guid.Parse(userID) : null));
+            return Ok(await _novelService.GetNovels(pageIndex, pageSize, genreID, userID != null ? Guid.Parse(userID) : null, searchText));
         }
 
         [HttpGet("/get-novel-by-id/{novelID}")]

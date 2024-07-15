@@ -1,11 +1,14 @@
 ﻿using LibraNovel.Application.Interfaces;
+using LibraNovel.Application.ViewModels.Novel;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Identity.Client;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace LibraNovel.Application.Services
@@ -23,6 +26,11 @@ namespace LibraNovel.Application.Services
             _database = _redis.GetDatabase();
         }
 
+        public async Task<string?> GetDataFromCache<T>(string key)
+        {
+            return await _cache.GetStringAsync(key);
+        }
+
         public async Task RemoveCacheKeysContaining(string keyFragment)
         {
             var cacheKeys = GetAllCacheKeys();
@@ -34,6 +42,15 @@ namespace LibraNovel.Application.Services
                     await _cache.RemoveAsync(cacheKey);
                 }
             }
+        }
+        public async Task<T> StoreDataToCache<T>(string key, T data)
+        {
+            await _cache.SetStringAsync(key, JsonSerializer.Serialize(data), new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            });
+
+            return data;
         }
 
         private List<string> GetAllCacheKeys()

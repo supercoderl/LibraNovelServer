@@ -71,7 +71,7 @@ namespace LibraNovel.Application.Services
             await _context.Novels.AddAsync(novel);
             await _context.SaveChangesAsync();
 
-            await _cacheService.RemoveCacheKeysContaining("novels_");
+            await _cacheService.RemoveCacheKeysContaining("read_novels");
 
             return new Response<string>("Tạo thành công", null);
         }
@@ -87,7 +87,7 @@ namespace LibraNovel.Application.Services
             _context.Novels.Update(novel);
             await _context.SaveChangesAsync();
 
-            await _cacheService.RemoveCacheKeysContaining("novels_");
+            await _cacheService.RemoveCacheKeysContaining("read_novels");
 
             return new Response<string>("Xóa truyện thành công.", null);
         }
@@ -139,7 +139,7 @@ namespace LibraNovel.Application.Services
             return genres;
         }
 
-        public async Task<Response<RequestParameter<NovelResponse>>> GetNovels(int pageIndex, int pageSize, int? genreID, Guid? userID)
+        public async Task<Response<RequestParameter<NovelResponse>>> GetNovels(int pageIndex, int pageSize, int? genreID, Guid? userID, string? searchText)
         {
             List<int> novelIDs = new List<int>();
             List<Guid> publisherIDs = new List<Guid>();
@@ -147,8 +147,8 @@ namespace LibraNovel.Application.Services
 
             var stopwatch = Stopwatch.StartNew();
 
-            var cacheKey = $"novels_{pageIndex}_{pageSize}_{genreID}_{userID}";
-            string? cachedData = await _cache.GetStringAsync(cacheKey);
+            var cacheKey = $"read_novels_{pageIndex}_{pageSize}_{genreID}_{userID}_{searchText}";
+            string? cachedData = await _cacheService.GetDataFromCache<List<NovelResponse>>(cacheKey);
 
             List<Novel>? novels = null;
 
@@ -161,7 +161,7 @@ namespace LibraNovel.Application.Services
             {
                 var query = _context.Novels.AsNoTracking().Where(n => n.DeletedDate == null);
 
-                query = FilterNovels(query, genreID, userID);
+                query = FilterNovels(query, genreID, userID, searchText);
 
                 novels = await query.OrderBy(n => n.NovelID)
                                     .Skip((pageIndex - 1) * pageSize)
@@ -198,12 +198,9 @@ namespace LibraNovel.Application.Services
                     }).ToList();
                 }
 
-                var cacheOptions = new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-                };
-                await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(novelResponses), cacheOptions);
+                await _cacheService.StoreDataToCache(cacheKey, novelResponses);
             }
+
             int totalCount = await CountData(genreID, userID);
 
             stopwatch.Stop();
@@ -249,7 +246,7 @@ namespace LibraNovel.Application.Services
             _context.Novels.Update(novel);
             await _context.SaveChangesAsync();
 
-            await _cacheService.RemoveCacheKeysContaining("novels_");
+            await _cacheService.RemoveCacheKeysContaining("read_novels");
 
             return new Response<string>("Cập nhật thành công", null);
         }
@@ -290,7 +287,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa truyện thành công.", null);
         }
 
-        private IQueryable<Novel> FilterNovels(IQueryable<Novel> query, int? genreID, Guid? userID)
+        private IQueryable<Novel> FilterNovels(IQueryable<Novel> query, int? genreID, Guid? userID, string? searchText)
         {
             if (genreID.HasValue && genreID != -1)
             {
@@ -312,6 +309,11 @@ namespace LibraNovel.Application.Services
             if (userID.HasValue)
             {
                 query = query.Where(n => n.PublisherID == userID);
+            }
+
+            if(!string.IsNullOrEmpty(searchText))
+            {
+                query = query.Where(n => n.Title.ToLower().Contains(searchText.ToLower()));
             }
 
             return query;
