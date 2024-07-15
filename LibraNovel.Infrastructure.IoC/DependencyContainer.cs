@@ -40,6 +40,7 @@ namespace LibraNovel.Infrastructure.IoC
             services.AddScoped<ITokenCache, TokenCache>();
             services.AddScoped<IPermissionService, PermissionService>();
             services.AddScoped<IQRCodeService, QRCodeService>();
+            services.AddScoped<ICacheService, CacheService>();
         }
 
         public static void AddDatabaseServices(this IServiceCollection services, IConfiguration configuration)
@@ -47,6 +48,11 @@ namespace LibraNovel.Infrastructure.IoC
             //Database
             services.AddDbContext<LibraNovelContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")), ServiceLifetime.Transient);
+
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = configuration.GetConnectionString("RedisConnection");
+            });
         }
 
         public static void AddAspNetCoreServices(this IServiceCollection services)

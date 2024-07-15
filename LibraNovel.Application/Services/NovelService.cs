@@ -11,10 +11,13 @@ using LibraNovel.Infrastructure.Data.Context;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
+using Org.BouncyCastle.Ocsp;
+using StackExchange.Redis;
 using System.Collections.Generic;
 using System.Diagnostics;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Text.Json;
 
 namespace LibraNovel.Application.Services
 {
@@ -25,9 +28,10 @@ namespace LibraNovel.Application.Services
         private readonly IUserService _userService;
         private readonly IChapterService _chapterService;
         private readonly IImageService _imageService;
-        private readonly IMemoryCache _cache;
+        private readonly IDistributedCache _cache;
+        private readonly ICacheService _cacheService;
 
-        public NovelService(LibraNovelContext context, IMapper mapper, IUserService userService, IChapterService chapterService, IImageService imageService, IMemoryCache cache)
+        public NovelService(LibraNovelContext context, IMapper mapper, IUserService userService, IChapterService chapterService, IImageService imageService, IDistributedCache cache, ICacheService cacheService)
         {
             _context = context;
             _mapper = mapper;
@@ -35,6 +39,7 @@ namespace LibraNovel.Application.Services
             _chapterService = chapterService;
             _imageService = imageService;
             _cache = cache;
+            _cacheService = cacheService;
         }
 
         public async Task<Response<string>> CreateMappingGenreWithNovel(int genreID, int novelID)
@@ -65,6 +70,9 @@ namespace LibraNovel.Application.Services
 
             await _context.Novels.AddAsync(novel);
             await _context.SaveChangesAsync();
+
+            await _cacheService.RemoveCacheKeysContaining("novels_");
+
             return new Response<string>("Tạo thành công", null);
         }
 
@@ -78,6 +86,9 @@ namespace LibraNovel.Application.Services
             novel.DeletedDate = DateTime.Now;
             _context.Novels.Update(novel);
             await _context.SaveChangesAsync();
+
+            await _cacheService.RemoveCacheKeysContaining("novels_");
+
             return new Response<string>("Xóa truyện thành công.", null);
         }
 
@@ -134,16 +145,17 @@ namespace LibraNovel.Application.Services
             List<Guid> publisherIDs = new List<Guid>();
             List<NovelResponse>? novelResponses = new List<NovelResponse>();
 
-
             var stopwatch = Stopwatch.StartNew();
 
             var cacheKey = $"novels_{pageIndex}_{pageSize}_{genreID}_{userID}";
+            string? cachedData = await _cache.GetStringAsync(cacheKey);
+
             List<Novel>? novels = null;
 
             // Attempt to get novels from cache
-            if (_cache.TryGetValue(cacheKey, out List<NovelResponse>? cachedNovels))
+            if (!string.IsNullOrEmpty(cachedData))
             {
-                novelResponses = cachedNovels;
+                novelResponses = JsonSerializer.Deserialize<List<NovelResponse>>(cachedData);
             }
             else
             {
@@ -199,13 +211,13 @@ namespace LibraNovel.Application.Services
                     }).ToList();
                 }
 
-                var cacheEntryOptions = new MemoryCacheEntryOptions()
-                .SetSlidingExpiration(TimeSpan.FromMinutes(5));
-
-                // Save data in cache
-                _cache.Set(cacheKey, novelResponses, cacheEntryOptions);
+                var cacheOptions = new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+                };
+                await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(novelResponses), cacheOptions);
             }
-            var totalCount = await _context.Novels.CountAsync();
+            int totalCount = await CountData(genreID, userID);
 
             stopwatch.Stop();
             var executionTime = stopwatch.Elapsed;
@@ -249,6 +261,9 @@ namespace LibraNovel.Application.Services
 
             _context.Novels.Update(novel);
             await _context.SaveChangesAsync();
+
+            await _cacheService.RemoveCacheKeysContaining("novels_");
+
             return new Response<string>("Cập nhật thành công", null);
         }
 
@@ -284,6 +299,7 @@ namespace LibraNovel.Application.Services
             }
             _context.Novels.Remove(novel);
             await _context.SaveChangesAsync();
+
             return new Response<string>("Xóa truyện thành công.", null);
         }
 
@@ -316,7 +332,7 @@ namespace LibraNovel.Application.Services
 
         private async Task<int> CountData(int? genreID, Guid? userID)
         {
-            int totalCount = 0;
+            int totalCount = await _context.Novels.CountAsync();
             if (genreID != null && genreID != -1)
             {
                 totalCount = await _context.Novels
