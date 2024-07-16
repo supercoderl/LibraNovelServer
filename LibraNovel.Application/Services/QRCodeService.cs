@@ -20,6 +20,7 @@ namespace LibraNovel.Application.Services
 
         }
 
+        //Generate QR Code
         public async Task<Response<string>> GenerateQRCode(QRCodeRequestViewModel request)
         {
             await Task.CompletedTask;
@@ -36,6 +37,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Convert bit map to byte array
         private byte[] BitmapToByteArray(Bitmap bitmap)
         {
             using (MemoryStream ms = new MemoryStream())

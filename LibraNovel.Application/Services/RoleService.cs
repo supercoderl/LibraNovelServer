@@ -34,12 +34,14 @@ namespace LibraNovel.Application.Services
             _menuService = menuService;
         }
 
+        //Check user have roles or not
         public async Task<Response<bool>> CheckAnyUserHaveRole()
         {
             var check = await _context.UsersRoles.AnyAsync(ur => ur.UserID != null);
             return new Response<bool>(check, null);
         }
 
+        //Associate roles with permissions
         public async Task<Response<string>> CreateMappingRoleWithPermissions(CreateMappingRoleWithPermissionsRequest request)
         {
             //Role permissions = rps
@@ -75,6 +77,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Liên kết quyền và vai trò thành công", null);
         }
 
+        //Get permissions list to add
         private List<int> GetAddList(List<int> oldPermissions, List<int> newPermissions)
         {
             List<int> toAdd = new List<int>();
@@ -88,6 +91,7 @@ namespace LibraNovel.Application.Services
             return toAdd;
         }
 
+        //Get permissions list to remove
         private List<int> GetRemoveList(List<int> oldPermissions, List<int> newPermissions)
         {
             List<int> toRemove = new List<int>();
@@ -101,6 +105,7 @@ namespace LibraNovel.Application.Services
             return toRemove;
         }
 
+        //Create new role
         public async Task<Response<string>> CreateRole(CreateRoleViewModel request)
         {
             var role = _mapper.Map<Role>(request);
@@ -109,6 +114,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Tạo vai trò thành công", null);
         }
 
+        //Delete role
         public async Task<Response<string>> DeleteRole(int roleID)
         {
             var role = await _context.Roles.FindAsync(roleID);
@@ -121,6 +127,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa vai trò thành công", null);
         }
 
+        //Get all roles from database
         public async Task<Response<RequestParameter<RoleResponse>>> GetAllRoles(int pageIndex, int pageSize)
         {
             var roles = await _context.Roles.OrderBy(r => r.RoleID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -159,6 +166,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Get the list of role associations 
         public async Task<Response<IReadOnlyList<RoleResponse>>> GetMappingRoles(Guid userID)
         {
             var roles = await _context.UsersRoles.Where(ur => ur.UserID == userID).
@@ -171,6 +179,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Get single role by id
         public async Task<Response<RoleResponse>> GetRoleByID(int roleID)
         {
             var role = await _context.Roles.FindAsync(roleID);
@@ -185,6 +194,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Update role
         public async Task<Response<string>> UpdateRole(int roleID, UpdateRoleViewModel request)
         {
             if (roleID != request.RoleID)

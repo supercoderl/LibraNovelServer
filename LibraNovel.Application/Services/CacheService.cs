@@ -26,11 +26,13 @@ namespace LibraNovel.Application.Services
             _database = _redis.GetDatabase();
         }
 
+        //Get data from cache
         public async Task<string?> GetDataFromCache<T>(string key)
         {
             return await _cache.GetStringAsync(key);
         }
 
+        //Remove cache by key fragment
         public async Task RemoveCacheKeysContaining(string keyFragment)
         {
             var cacheKeys = GetAllCacheKeys();
@@ -43,6 +45,8 @@ namespace LibraNovel.Application.Services
                 }
             }
         }
+
+        //Store data to cache
         public async Task<T> StoreDataToCache<T>(string key, T data)
         {
             await _cache.SetStringAsync(key, JsonSerializer.Serialize(data), new DistributedCacheEntryOptions
@@ -53,6 +57,7 @@ namespace LibraNovel.Application.Services
             return data;
         }
 
+        //Get all cache key
         private List<string> GetAllCacheKeys()
         {
             var keys = new List<string>();

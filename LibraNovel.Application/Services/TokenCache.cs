@@ -16,6 +16,7 @@ namespace LibraNovel.Application.Services
         private readonly SemaphoreSlim _refreshTokenSemaphore = new SemaphoreSlim(1, 1);
         private readonly MemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
 
+        //Get token from database
         public async Task<Response<LoginResponse>> GetTokenAsync(Func<string, DateTime, Task<Response<LoginResponse>>> refreshTokenFunc, string refreshToken, DateTime now)
         {
             string cacheKey = "Response";

@@ -28,6 +28,7 @@ namespace LibraNovel.Application.Services
             _userService = userService;
         }
 
+        //Create new comment
         public async Task<Response<CommentResponse>> CreateComment(CreateCommentViewModel request)
         {
             var comment = _mapper.Map<Comment>(request);
@@ -36,6 +37,7 @@ namespace LibraNovel.Application.Services
             return new Response<CommentResponse>(_mapper.Map<CommentResponse>(comment), null);
         }
 
+        //Delete comment
         public async Task<Response<string>> DeleteComment(int commentID)
         {
             var comment = await _context.Comments.FindAsync(commentID);
@@ -48,53 +50,41 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa bình luận thành công", null);
         }
 
+        //Get comments list
         public async Task<Response<RequestParameter<CommentResponse>>> GetAllComments(int pageIndex, int pageSize, Guid? userID, int? novelID, int? chapterID)
         {
-            var comments = await _context.Comments.OrderByDescending(c => c.CreatedDate).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
-            if (userID != null)
-            {
-                comments = comments.Where(c => c.UserID == userID).ToList();
-            }
-            if (novelID != null)
-            {
-                comments = comments.Where(c => c.NovelID == novelID).ToList();
-            }
-            if (chapterID != null)
-            {
-                comments = comments.Where(c => c.ChapterID == chapterID).ToList();
-            }
+            List<CommentResponse>? commentResponses = new List<CommentResponse>();
 
-            var commentsDTO = comments.Select(c => _mapper.Map<CommentResponse>(c)).ToList();
-            if (commentsDTO.Any())
+            var query = _context.Comments.AsNoTracking();
+
+            query = FilterComments(query, userID, novelID);
+
+            var comments = await query.OrderByDescending(c => c.CreatedDate)
+                                      .Skip((pageIndex - 1) * pageSize)
+                                      .Take(pageSize)
+                                      .Include(c => c.User)
+                                      .Include(c => c.Novel)
+                                      .ToListAsync();
+
+            if(comments != null)
             {
-                foreach (var commentDTO in commentsDTO)
+                commentResponses = comments.Select(comment =>
                 {
-                    if (commentDTO.UserID != null)
+                    var commentResponse = _mapper.Map<CommentResponse>(comment);
+
+                    if(comment.User != null)
                     {
-                        var user = await _context.Users.FindAsync(commentDTO.UserID);
-                        if (user != null)
-                        {
-                            commentDTO.Name = string.Concat(user.LastName, " ", user.FirstName);
-                            commentDTO.Avatar = user.Avatar;
-                        };
+                        commentResponse.Name = string.Concat(comment.User.LastName, " ", comment.User.FirstName);
+                        commentResponse.Avatar = comment.User.Avatar;
                     }
-                    if (commentDTO.NovelID != null)
+
+                    if(comment.Novel != null)
                     {
-                        var novel = await _context.Novels.FindAsync(commentDTO.NovelID);
-                        if (novel != null)
-                        {
-                            commentDTO.Novel = novel.Title;
-                        };
+                        commentResponse.Novel = comment.Novel.Title;
                     }
-                    if (commentDTO.ChapterID != null)
-                    {
-                        var chapter = await _context.Chapters.FindAsync(commentDTO.ChapterID);
-                        if (chapter != null)
-                        {
-                            commentDTO.Chapter = chapter.Title;
-                        };
-                    }
-                }
+
+                    return commentResponse;
+                }).ToList();    
             }
 
             return new Response<RequestParameter<CommentResponse>>
@@ -104,12 +94,13 @@ namespace LibraNovel.Application.Services
                 {
                     PageIndex = pageIndex,
                     PageSize = pageSize,
-                    TotalItemsCount = comments.Count,
-                    Items = commentsDTO
+                    TotalItemsCount = await CountData(userID, novelID),
+                    Items = commentResponses
                 }
             };
         }
 
+        //Update comment
         public async Task<Response<string>> UpdateComment(int commentID, UpdateCommentViewModel request)
         {
             if (commentID != request.CommentID)
@@ -125,6 +116,37 @@ namespace LibraNovel.Application.Services
             _context.Comments.Update(comment);
             await _context.SaveChangesAsync();
             return new Response<string>("Cập nhật bình luận thành công", null);
+        }
+
+        //Filter
+        private IQueryable<Comment> FilterComments(IQueryable<Comment> query, Guid? userID, int? novelID)
+        {
+            if (userID.HasValue)
+            {
+                query = query.Where(c => c.UserID == userID.Value);
+            }
+
+            if (novelID.HasValue)
+            {
+                query = query.Where(c => c.NovelID == novelID.Value);
+            }
+
+            return query;
+        }
+
+        //Count
+        private async Task<int> CountData(Guid? userID, int? novelID)
+        {
+            int totalCount = await _context.Comments.CountAsync();
+            if (userID.HasValue)
+            {
+                totalCount = await _context.Comments.Where(c => c.UserID == userID.Value).CountAsync();
+            }
+            if (novelID.HasValue)
+            {
+                totalCount = await _context.Comments.Where(n => n.NovelID == novelID.Value).CountAsync();
+            }
+            return totalCount;
         }
     }
 }

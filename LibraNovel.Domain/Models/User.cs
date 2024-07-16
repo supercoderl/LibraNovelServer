@@ -49,6 +49,9 @@ public partial class User
 
     public bool IsActive { get; set; }
 
+    [Column(TypeName = "datetime")]
+    public DateTime LastLoggedIn { get; set; }
+
     [InverseProperty("User")]
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 

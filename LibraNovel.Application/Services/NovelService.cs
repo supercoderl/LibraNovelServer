@@ -42,6 +42,7 @@ namespace LibraNovel.Application.Services
             _cacheService = cacheService;
         }
 
+        //Link genre to novel
         public async Task<Response<string>> CreateMappingGenreWithNovel(int genreID, int novelID)
         {
             var novelsgenres = new NovelGenre
@@ -55,6 +56,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Tạo liên kết thành công", null);
         }
 
+        //Create new novel
         public async Task<Response<string>> CreateNovel(IFormFile? file, CreateNovelViewModel request)
         {
             var novel = _mapper.Map<Novel>(request);
@@ -76,6 +78,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Tạo thành công", null);
         }
 
+        //Delete novel
         public async Task<Response<string>> DeleteNovel(int novelID)
         {
             var novel = await _context.Novels.FindAsync(novelID);
@@ -92,6 +95,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa truyện thành công.", null);
         }
 
+        //Unlink the genre from the novel
         public async Task<Response<string>> DropMappingGenreWithNovel(int genreID, int novelID)
         {
             var novelsgenres = await _context.NovelGenres.FirstOrDefaultAsync(ng => ng.GenreID == genreID && ng.NovelID == novelID);
@@ -104,6 +108,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa liên kết thành công", null);
         }
 
+        //Get single novel by id
         public async Task<Response<NovelResponse>> GetNovelByID(int novelID)
         {
             var novel = await _context.Novels.FirstOrDefaultAsync(n => n.DeletedDate == null && n.NovelID == novelID);
@@ -125,6 +130,7 @@ namespace LibraNovel.Application.Services
             return new Response<NovelResponse>(novelMapping, null);
         }
 
+        //Get genres list from novel
         private async Task<IReadOnlyList<string>> GetGenreFromNovel(List<NovelGenre> novelsgenres)
         {
             List<string> genres = new List<string>();
@@ -139,6 +145,7 @@ namespace LibraNovel.Application.Services
             return genres;
         }
 
+        //Get novels list
         public async Task<Response<RequestParameter<NovelResponse>>> GetNovels(int pageIndex, int pageSize, int? genreID, Guid? userID, string? searchText)
         {
             List<int> novelIDs = new List<int>();
@@ -220,6 +227,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Update novel
         public async Task<Response<string>> UpdateNovel(int novelID, IFormFile? file, UpdateNovelViewModel request)
         {
             if (novelID != request.NovelID)
@@ -251,6 +259,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Cập nhật thành công", null);
         }
 
+        //Update novel views
         public async Task<Response<string>> UpdateCount(int novelID, string type)
         {
             var novel = await _context.Novels.FindAsync(novelID);
@@ -274,6 +283,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Cập nhật thành công", null);
         }
 
+        //Permanently delete the novel
         public async Task<Response<string>> PermanentlyDelete(int novelID)
         {
             var novel = await _context.Novels.FindAsync(novelID);
@@ -287,6 +297,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa truyện thành công.", null);
         }
 
+        //Filter
         private IQueryable<Novel> FilterNovels(IQueryable<Novel> query, int? genreID, Guid? userID, string? searchText)
         {
             if (genreID.HasValue && genreID != -1)
@@ -319,6 +330,7 @@ namespace LibraNovel.Application.Services
             return query;
         }
 
+        //Count
         private async Task<int> CountData(int? genreID, Guid? userID)
         {
             int totalCount = await _context.Novels.CountAsync();

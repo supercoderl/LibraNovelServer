@@ -21,6 +21,7 @@ namespace LibraNovel.Application.Services
             _mapper = mapper;
         }
 
+        //Create new genre
         public async Task<Response<string>> CreateGenre(CreateGenreViewModel request)
         {
             var genre = _mapper.Map<Genre>(request);
@@ -29,6 +30,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Tạo thể loại thành công", null);
         }
 
+        //Delete genre
         public async Task<Response<string>> DeleteGenre(int genreID)
         {
             var genre = await _context.Genres.FindAsync(genreID);
@@ -41,6 +43,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa thể loại thành công", null);
         }
 
+        //Get genres list
         public async Task<Response<RequestParameter<GenreResponse>>> GetAllGenres(int pageIndex, int pageSize)
         {
             var genres = await _context.Genres.OrderBy(g => g.GenreID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -58,6 +61,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Get single genre by id
         public async Task<Response<GenreResponse>> GetGenreByID(int genreID)
         {
             var genre = await _context.Genres.FindAsync(genreID);
@@ -68,6 +72,7 @@ namespace LibraNovel.Application.Services
             return new Response<GenreResponse>(_mapper.Map<GenreResponse>(genre), null);
         }
 
+        //Update genre
         public async Task<Response<string>> UpdateGenre(int genreID, UpdateGenreViewModel request)
         {
             if(genreID != request.GenreID)

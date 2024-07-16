@@ -25,6 +25,8 @@ namespace LibraNovel.Application.Services
             _context = context;
             _mapper = mapper;
         }
+
+        //Create new rating
         public async Task<Response<string>> CreateRating(CreateRatingViewModel request)
         {
             var rating = _mapper.Map<Rating>(request);
@@ -33,6 +35,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Tạo đánh giá thành công", null);
         }
 
+        //Delete rating
         public async Task<Response<string>> DeleteRating(int ratingsID)
         {
             var rating = await _context.Ratings.FindAsync(ratingsID);
@@ -45,6 +48,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa đánh giá thành công", null);
         }
 
+        //Get ratings list
         public async Task<Response<RequestParameter<RatingResponse>>> GetAllRatings(int pageIndex, int pageSize, int? novelID)
         {
             var ratings = await _context.Ratings.Where(r => r.NovelID == novelID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();

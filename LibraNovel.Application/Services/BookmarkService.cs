@@ -25,6 +25,7 @@ namespace LibraNovel.Application.Services
             _mapper = mapper;
         }
 
+        //Create new bookmark
         public async Task<Response<string>> CreateBookmark(CreateBookmarkViewModel request)
         {
             var bookmark = _mapper.Map<Bookmark>(request);
@@ -33,6 +34,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Tạo đánh dấu thành công", null);
         }
 
+        //Delete bookmark
         public async Task<Response<string>> DeleteBookmark(int bookmarkID)
         {
             var bookmark = await _context.Bookmarks.FindAsync(bookmarkID);
@@ -45,6 +47,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa đánh dấu thành công", null);
         }
 
+        //Get bookmarks list
         public Task<Response<RequestParameter<BookmarkResponse>>> GetAllBookmarks(int pageIndex, int pageSize)
         {
             throw new NotImplementedException();

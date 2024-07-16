@@ -29,6 +29,7 @@ namespace LibraNovel.Application.Services
             _mapper = mapper;
         }
 
+        //Create new permission
         public async Task<Response<string>> CreatePermission(CreatePermissionViewModel request)
         {
             var permission = _mapper.Map<Permission>(request);
@@ -37,7 +38,8 @@ namespace LibraNovel.Application.Services
             await _context.SaveChangesAsync();
             return new Response<string>("Tạo thành công", null);
         }
-
+        
+        //Delete permission
         public async Task<Response<string>> DeletePermission(int permissionID)
         {
             var permission = await _context.Permissions.FindAsync(permissionID);
@@ -51,23 +53,31 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa thành công", null);
         }
 
+        //Get all permissions from database
         public async Task<Response<RequestParameter<PermissionResponse>>> GetAllPermissions(int pageIndex, int pageSize)
         {
-            var permissions = await _context.Permissions.OrderBy(n => n.PermissionID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+            List<PermissionResponse>? permissionResponses = new List<PermissionResponse>();
+
+            var query = _context.Permissions.AsNoTracking();
+
+            var permissions = await query.OrderBy(n => n.PermissionID)
+                                    .Include(p => p.ParentNavigation)
+                                    .Skip((pageIndex - 1) * pageSize)
+                                    .Take(pageSize)
+                                    .ToListAsync();
+
             var totalCount = await _context.Permissions.CountAsync();
 
-            var permissionsDTO = permissions.Select(n => _mapper.Map<PermissionResponse>(n)).ToList();
-
-            if (permissionsDTO.Any())
+            if (permissions != null)
             {
-                foreach (var item in permissionsDTO)
+                permissionResponses = permissions.Select(permission =>
                 {
-                    if (item.Parent != null)
-                    {
-                        var permission = await _context.Permissions.FindAsync(item.Parent);
-                        item.ParentTitle = permission != null ? permission.Title : null;
-                    }
-                }
+                    var permissionResponse = _mapper.Map<PermissionResponse>(permission);
+
+                    permissionResponse.ParentTitle = permission.ParentNavigation?.Title;
+
+                    return permissionResponse;
+                }).ToList();
             }
 
             return new Response<RequestParameter<PermissionResponse>>
@@ -78,11 +88,12 @@ namespace LibraNovel.Application.Services
                     TotalItemsCount = totalCount,
                     PageSize = pageSize,
                     PageIndex = pageIndex,
-                    Items = permissionsDTO
+                    Items = permissionResponses
                 }
             };
         }
 
+        //Build a permission tree 
         public async Task<Response<List<NodeResponse>>> BuildTree()
         {
             var rootPermissions = new List<PermissionResponse>();
@@ -117,6 +128,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Convert menu to node tree
         private List<NodeResponse> ConvertMenusToNodes(List<PermissionResponse> permissions)
         {
             List<NodeResponse> nodes = new List<NodeResponse>();
@@ -136,6 +148,7 @@ namespace LibraNovel.Application.Services
             return nodes;
         }
 
+        //Get single permission by id
         public async Task<Response<PermissionResponse>> GetPermissionByID(int permissionID)
         {
             var permission = await _context.Permissions.FirstOrDefaultAsync(n => n.PermissionID == permissionID);
@@ -147,6 +160,7 @@ namespace LibraNovel.Application.Services
             return new Response<PermissionResponse>(_mapper.Map<PermissionResponse>(permission), null);
         }
 
+        //Update permission
         public async Task<Response<string>> UpdatePermission(int permissionID, UpdatePermissionViewModel request)
         {
             if (permissionID != request.PermissionID)
@@ -165,6 +179,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Cập nhật thành công", null);
         }
 
+        //Get permissions list by role
         public async Task<Response<List<PermissionResponse>>> GetPermissionsByRole(List<int> roleIDs)
         {
             List<Permission> permissionsByRole = new List<Permission>();

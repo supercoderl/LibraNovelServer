@@ -115,6 +115,9 @@ namespace LibraNovel.Application.Services
             }
 
             var result = await GenerateToken(user, claims, DateTime.Now);
+
+            await UpdateLoginTime(user.UserID);
+
             result.User = new UserResponse
             {
                 UserID = user.UserID,
@@ -360,20 +363,29 @@ namespace LibraNovel.Application.Services
         //Get All Users Service
         public async Task<Response<RequestParameter<UserInformation>>> GetAllUsers(int pageIndex, int pageSize)
         {
-            var users = await _context.Users.OrderBy(u => u.UserID).Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+            List<UserInformation>? userInformations = new List<UserInformation>();
 
-            var usersDTO = users.Select(u => _mapper.Map<UserInformation>(u)).ToList();
+            var query = _context.Users.AsNoTracking();
 
-            if (usersDTO.Any())
+            var users = await query.OrderBy(u => u.UserID)
+                                   .Skip((pageIndex - 1) * pageSize)
+                                   .Take(pageSize)
+                                   .Include(u => u.UsersRoles)
+                                   .ToListAsync();
+
+            if(users != null)
             {
-                foreach (var user in usersDTO)
+                userInformations = users.Select(user =>
                 {
-                    var roles = await _roleService.GetMappingRoles(user.UserID);
-                    if (roles.Succeeded)
+                    var userInformation = _mapper.Map<UserInformation>(user);
+
+                    if(user.UsersRoles != null)
                     {
-                        user.Roles = roles.Data.Select(r => r.RoleID.ToString()).ToList();
+                        userInformation.Roles = user.UsersRoles.Where(ur => ur.RoleID.HasValue).Select(ur => ur.RoleID.ToString()!).ToList();
                     }
-                }
+
+                    return userInformation;
+                }).ToList();
             }
 
             return new Response<RequestParameter<UserInformation>>
@@ -383,8 +395,8 @@ namespace LibraNovel.Application.Services
                 {
                     PageIndex = pageIndex,
                     PageSize = pageSize,
-                    TotalItemsCount = users.Count,
-                    Items = users.Select(u => _mapper.Map<UserInformation>(u)).ToList()
+                    TotalItemsCount = users != null ? users.Count() : 0,
+                    Items = userInformations
                 },
             };
         }
@@ -520,6 +532,7 @@ namespace LibraNovel.Application.Services
                 return new Response<LoginResponse>("Không có người dùng nào");
             }
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email && u.Provider == request.Provider);
+            
             if (user == null)
             {
                 RegisterViewModel newUser = new RegisterViewModel
@@ -555,6 +568,7 @@ namespace LibraNovel.Application.Services
             }, ipAddress);
         }
 
+        //Get User By IDs
         public async Task<Response<List<UserInformation>>> GetUserByIDs(List<Guid> userIDs)
         {
             if (userIDs == null || !userIDs.Any())
@@ -578,6 +592,20 @@ namespace LibraNovel.Application.Services
                 Succeeded = true,
                 Data = userInformations
             };
+        }
+
+        //Update login time
+        private async Task<bool> UpdateLoginTime(Guid userID)
+        {
+            var user = await _context.Users.FindAsync(userID);
+            if(user != null)
+            {
+                user.LastLoggedIn = DateTime.Now;
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
+            }
+
+            return true;
         }
     }
 }

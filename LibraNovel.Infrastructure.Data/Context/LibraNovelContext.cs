@@ -282,6 +282,7 @@ public partial class LibraNovelContext : DbContext
             entity.Property(e => e.FirstName).HasMaxLength(50);
             entity.Property(e => e.Gender).HasMaxLength(10);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.LastLoggedIn).HasColumnType("datetime");
             entity.Property(e => e.LastName).HasMaxLength(50);
             entity.Property(e => e.PasswordHash)
                 .IsRequired()

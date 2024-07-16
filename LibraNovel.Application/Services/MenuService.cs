@@ -28,6 +28,7 @@ namespace LibraNovel.Application.Services
             _mapper = mapper;
         }
 
+        //Build a menu tree
         public async Task<Response<List<NodeResponse>>> BuildTree()
         {
             var menus = await _context.Menus.ToListAsync();
@@ -41,6 +42,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Convert menus list to node tree
         private List<NodeResponse> ConvertMenusToNodes(List<MenuResponse> menus)
         {
             List<NodeResponse> nodes = new List<NodeResponse>();
@@ -59,6 +61,7 @@ namespace LibraNovel.Application.Services
             return nodes;
         }
 
+        //Link the role with menus
         public async Task<Response<string>> CreateMappingRoleWithMenus(CreateMappingRoleWithMenuViewModel request)
         {
             //Role menus = rms
@@ -94,6 +97,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Liên kết menu và vai trò thành công", null);
         }
 
+        //Get menus list to add
         private List<int> GetAddList(List<int> oldMenus, List<int> newMenus)
         {
             List<int> toAdd = new List<int>();
@@ -107,6 +111,7 @@ namespace LibraNovel.Application.Services
             return toAdd;
         }
 
+        //Get menus list to remove
         private List<int> GetRemoveList(List<int> oldMenus, List<int> newMenus)
         {
             List<int> toRemove = new List<int>();
@@ -120,6 +125,7 @@ namespace LibraNovel.Application.Services
             return toRemove;
         }
 
+        //Create a new menu
         public async Task<Response<string>> CreateMenu(CreateMenuViewModel request)
         {
             var menu = _mapper.Map<Menu>(request);
@@ -128,6 +134,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Tạo menu thành công", null);
         }
 
+        //Delete menu
         public async Task<Response<string>> DeleteMenu(int menuID)
         {
             var menu = await _context.Menus.FindAsync(menuID);
@@ -141,6 +148,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa menu thành công", null);
         }
 
+        //Get menus list
         public async Task<Response<List<MenuResponse>>> GetAllMenus()
         {
             var menus = await _context.Menus.ToListAsync();
@@ -152,6 +160,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Get single menu by id
         public async Task<Response<MenuResponse>> GetMenuByID(int menuID)
         {
             var menu = await _context.Menus.FindAsync(menuID);
@@ -162,6 +171,7 @@ namespace LibraNovel.Application.Services
             return new Response<MenuResponse> (_mapper.Map<MenuResponse>(menu), null);    
         }
 
+        //Get menus list by role
         public async Task<Response<List<MenuResponse>>> GetMenusByRole(List<int> roleIDs)
         {
             List<Menu> menusByRole = new List<Menu>();
@@ -183,6 +193,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Update menu
         public async Task<Response<string>> UpdateMenu(int menuID, UpdateMenuViewModel request)
         {
             if(menuID != request.MenuID)

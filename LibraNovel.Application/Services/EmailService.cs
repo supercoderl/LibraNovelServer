@@ -21,6 +21,7 @@ namespace LibraNovel.Application.Services
             _configuration = configuration;
         }
 
+        //Create message to send mail
         private MimeMessage CreateEmailMessage(Message message)
         {
             var emailMessage = new MimeMessage();
@@ -30,6 +31,8 @@ namespace LibraNovel.Application.Services
             emailMessage.Body = new TextPart(MimeKit.Text.TextFormat.Html) { Text = message.Content };
             return emailMessage;
         }
+
+        //Send mail
         private async Task SendEmailAsync(MimeMessage mailMessage)
         {
             using (var client = new SmtpClient())
@@ -53,6 +56,7 @@ namespace LibraNovel.Application.Services
             }
         }
 
+        //Send mail
         public async Task<Response<string>> SendEmail(Message message)
         {
             var mailMessage = CreateEmailMessage(message);

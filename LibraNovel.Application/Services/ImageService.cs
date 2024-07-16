@@ -32,6 +32,7 @@ namespace LibraNovel.Application.Services
                 ));
         }
 
+        //Upload image
         public async Task<Wrappers.Response<string>> UploadImage(IFormFile file)
         {
             return new Wrappers.Response<string>
@@ -41,6 +42,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Send file to cloud and get url string
         private async Task<string> UploadFile(IFormFile file)
         {
             using (var stream = new MemoryStream())

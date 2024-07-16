@@ -26,6 +26,7 @@ namespace LibraNovel.Application.Services
             _mapper = mapper;
         }
 
+        //Create chapter
         public async Task<Response<string>> CreateChapter(CreateChapterViewModel request)
         {
             var chapter = _mapper.Map<Chapter>(request);
@@ -34,6 +35,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Tạo chương thành công", null);
         }
 
+        //Delete chapter
         public async Task<Response<string>> DeleteChapter(int chapterID)
         {
             var chapter = await _context.Chapters.FindAsync(chapterID);
@@ -46,6 +48,7 @@ namespace LibraNovel.Application.Services
             return new Response<string>("Xóa chương thành công", null);
         }
 
+        //Get chapters list
         public async Task<Response<RequestParameter<ChapterResponse>>> GetAllChapters(int pageNumber, int pageSize, int? novelID)
         {
             var chapters = await _context.Chapters.OrderBy(c => c.ChapterID).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -68,6 +71,7 @@ namespace LibraNovel.Application.Services
             };
         }
 
+        //Get single chapter by id
         public async Task<Response<ChapterResponse>> GetChapterByID(int chapterID)
         {
             var chapter = await _context.Chapters.FindAsync(chapterID);
@@ -78,6 +82,7 @@ namespace LibraNovel.Application.Services
             return new Response<ChapterResponse>(_mapper.Map<ChapterResponse>(chapter), null);
         }
 
+        //Update chapter
         public async Task<Response<string>> UpdateChapter(int chapterID, UpdateChapterModel request)
         {
             if(chapterID != request.ChapterID)
