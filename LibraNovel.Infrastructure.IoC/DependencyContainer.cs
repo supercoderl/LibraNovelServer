@@ -42,6 +42,9 @@ namespace LibraNovel.Infrastructure.IoC
             services.AddScoped<IQRCodeService, QRCodeService>();
             services.AddScoped<ICacheService, CacheService>();
             services.AddScoped<IDashboardService, DashboardService>();
+            services.AddScoped<IPaypalService, PaypalService>();
+            services.AddScoped<ICardService, CardService>();
+            services.AddScoped<IVnPayService, VnPayService>();
         }
 
         public static void AddDatabaseServices(this IServiceCollection services, IConfiguration configuration)
@@ -62,6 +65,7 @@ namespace LibraNovel.Infrastructure.IoC
             services.AddResponseCaching();
             services.AddMemoryCache();
             services.AddControllers();
+            services.AddHttpClient();
             services.AddControllersWithViews().AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;

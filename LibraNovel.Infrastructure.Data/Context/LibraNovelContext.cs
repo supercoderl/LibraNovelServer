@@ -16,6 +16,8 @@ public partial class LibraNovelContext : DbContext
 
     public virtual DbSet<Bookmark> Bookmarks { get; set; }
 
+    public virtual DbSet<Card> Cards { get; set; }
+
     public virtual DbSet<Chapter> Chapters { get; set; }
 
     public virtual DbSet<Comment> Comments { get; set; }
@@ -61,6 +63,39 @@ public partial class LibraNovelContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.Bookmarks)
                 .HasForeignKey(d => d.UserID)
                 .HasConstraintName("FK_Bookmark_User");
+        });
+
+        modelBuilder.Entity<Card>(entity =>
+        {
+            entity.HasKey(e => e.CardID).HasName("PK__Card__55FECD8E540A383C");
+
+            entity.ToTable("Card");
+
+            entity.Property(e => e.CVV)
+                .IsRequired()
+                .HasMaxLength(4);
+            entity.Property(e => e.CardHolderName)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.CardNumber)
+                .IsRequired()
+                .HasMaxLength(19);
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.Description).HasMaxLength(255);
+            entity.Property(e => e.ExpirationDate)
+                .IsRequired()
+                .HasMaxLength(5);
+            entity.Property(e => e.PaymentMethod)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.HasOne(d => d.User).WithMany(p => p.Cards)
+                .HasForeignKey(d => d.UserID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Cards_Users");
         });
 
         modelBuilder.Entity<Chapter>(entity =>

@@ -56,6 +56,9 @@ public partial class User
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
     [InverseProperty("User")]
+    public virtual ICollection<Card> Cards { get; set; } = new List<Card>();
+
+    [InverseProperty("User")]
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
     [InverseProperty("Publisher")]

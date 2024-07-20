@@ -30,7 +30,6 @@ namespace LibraNovel.WebAPI.Controllers
         }
 
         [HttpGet("/get-permissions-by-role")]
-        [Authorize]
         public async Task<IActionResult> GetPermissionsByRole()
         {
             var roles = User.Claims

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using LibraNovel.Application.ViewModels.Bookmark;
+using LibraNovel.Application.ViewModels.Card;
 using LibraNovel.Application.ViewModels.Chapter;
 using LibraNovel.Application.ViewModels.Comment;
 using LibraNovel.Application.ViewModels.Genre;
@@ -74,6 +75,11 @@ namespace LibraNovel.Application.Mappers
             CreateMap<CreatePermissionViewModel, Permission>();
             CreateMap<Permission, PermissionResponse>();
             CreateMap<UpdatePermissionViewModel, Permission>();
+
+            //Mapping card
+            CreateMap<CreateCardViewModel, Card>();
+            CreateMap<Card, CardResponse>();
+            CreateMap<UpdateCardViewModel, Card>();
         }
     }
 }

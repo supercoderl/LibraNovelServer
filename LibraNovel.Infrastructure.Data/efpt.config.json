@@ -20,6 +20,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[Card]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[Chapter]",
          "ObjectType": 0
       },
