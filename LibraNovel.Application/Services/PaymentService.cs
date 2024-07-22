@@ -1,15 +1,16 @@
 ﻿using LibraNovel.Application.Interfaces;
+using LibraNovel.Application.Libraries;
+using LibraNovel.Application.ViewModels.Payment;
 using LibraNovel.Application.ViewModels.Paypal;
 using LibraNovel.Application.Wrappers;
-using LibraNovel.Domain.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Net.payOS.Types;
+using Net.payOS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
@@ -386,6 +387,120 @@ namespace LibraNovel.Application.Services
                 return accessToken;
             }
             return string.Empty;
+        }
+    }
+
+    public class VnPayService : IVnPayService
+    {
+        private string? vnp_Returnurl;
+        private string? vnp_Url;
+        private string? vnp_TmnCode;
+        private string? vnp_HashSecret;
+
+        public VnPayService(IConfiguration configuration)
+        {
+            vnp_Returnurl = configuration["VnPayConfiguration:ReturnURL"]; //URL nhan ket qua tra ve 
+            vnp_Url = configuration["VnPayConfiguration:BaseURL"]; //URL thanh toan cua VNPAY 
+            vnp_TmnCode = configuration["VnPayConfiguration:TmnCode"]; //Ma định danh merchant kết nối (Terminal Id)
+            vnp_HashSecret = configuration["VnPayConfiguration:HashSecret"]; //Secret Key
+        }
+
+        public async Task<Response<string>> Pay(bool bankcode_Vnpayqr, bool bankcode_Vnbank, bool bankcode_Intcard, string locale)
+        {
+            await Task.CompletedTask;
+
+            //Get payment input
+            OrderInfo order = new OrderInfo();
+            order.OrderId = DateTime.Now.Ticks; // Giả lập mã giao dịch hệ thống merchant gửi sang VNPAY
+            order.Amount = 10000; // Giả lập số tiền thanh toán hệ thống merchant gửi sang VNPAY 100,000 VND
+            order.Status = "0"; //0: Trạng thái thanh toán "chờ thanh toán" hoặc "Pending" khởi tạo giao dịch chưa có IPN
+            order.CreatedDate = DateTime.Now;
+            //Save order to db
+
+            //Build URL for VNPAY
+            VnPayLibrary vnpay = new VnPayLibrary();
+
+            vnpay.AddRequestData("vnp_Version", VnPayLibrary.VERSION);
+            vnpay.AddRequestData("vnp_Command", "pay");
+            vnpay.AddRequestData("vnp_TmnCode", vnp_TmnCode);
+            vnpay.AddRequestData("vnp_Amount", (order.Amount * 100).ToString()); //Số tiền thanh toán. Số tiền không mang các ký tự phân tách thập phân, phần nghìn, ký tự tiền tệ. Để gửi số tiền thanh toán là 100,000 VND (một trăm nghìn VNĐ) thì merchant cần nhân thêm 100 lần (khử phần thập phân), sau đó gửi sang VNPAY là: 10000000
+            if (bankcode_Vnpayqr == true)
+            {
+                vnpay.AddRequestData("vnp_BankCode", "VNPAYQR");
+            }
+            else if (bankcode_Vnbank == true)
+            {
+                vnpay.AddRequestData("vnp_BankCode", "VNBANK");
+            }
+            else if (bankcode_Intcard == true)
+            {
+                vnpay.AddRequestData("vnp_BankCode", "INTCARD");
+            }
+
+            vnpay.AddRequestData("vnp_CreateDate", order.CreatedDate.ToString("yyyyMMddHHmmss"));
+            vnpay.AddRequestData("vnp_CurrCode", "VND");
+            vnpay.AddRequestData("vnp_IpAddr", Utils.GetIpAddress());
+
+            vnpay.AddRequestData("vnp_Locale", locale);
+
+            vnpay.AddRequestData("vnp_OrderInfo", "Thanh toan don hang:" + order.OrderId);
+            vnpay.AddRequestData("vnp_OrderType", "other"); //default value: other
+
+            vnpay.AddRequestData("vnp_ReturnUrl", vnp_Returnurl);
+            vnpay.AddRequestData("vnp_TxnRef", order.OrderId.ToString()); // Mã tham chiếu của giao dịch tại hệ thống của merchant. Mã này là duy nhất dùng để phân biệt các đơn hàng gửi sang VNPAY. Không được trùng lặp trong ngày
+
+            //Add Params of 2.1.0 Version
+            //Billing
+
+            string paymentUrl = vnpay.CreateRequestUrl(vnp_Url, vnp_HashSecret);
+            return new Response<string>
+            {
+                Succeeded = true,
+                Data = paymentUrl
+            };
+        }
+    }
+
+    public class PayOsService : IPayOsService
+    {
+        private readonly IConfiguration _configuration;
+        private readonly PayOS _payOS;
+
+        public PayOsService(IConfiguration configuration)
+        {
+            _configuration = configuration;
+            _payOS = new PayOS(
+                _configuration["PayOSConfiguration:ClientID"] ?? throw new Exception("Cannot find environment"),
+                _configuration["PayOSConfiguration:ApiKey"] ?? throw new Exception("Cannot find environment"),
+                _configuration["PayOSConfiguration:ChecksumKey"] ?? throw new Exception("Cannot find environment")
+            );
+        }
+
+        public async Task<Response<CreatePaymentResult>> CreateOrderPayOS(CreatePayOSViewModel request)
+        {
+            int orderCode = int.Parse(DateTimeOffset.Now.ToString("ffffff"));
+            ItemData item = new ItemData(request.ProductName, 1, request.Price);
+            List<ItemData> items = new List<ItemData>();
+            items.Add(item);
+            PaymentData paymentData = new PaymentData(orderCode, request.Price, request.Description, items, request.CancelUrl, request.ReturnUrl);
+
+            CreatePaymentResult createPayment = await _payOS.createPaymentLink(paymentData);
+
+            return new Response<CreatePaymentResult>
+            {
+                Succeeded = true,
+                Data = createPayment
+            };
+        }
+
+        public async Task<Response<PaymentLinkInformation>> CancelOrder(long orderID)
+        {
+            PaymentLinkInformation paymentLinkInformation = await _payOS.cancelPaymentLink(orderID);
+            return new Response<PaymentLinkInformation>
+            {
+                Succeeded = true,
+                Data = paymentLinkInformation
+            };
         }
     }
 }

@@ -9,6 +9,7 @@ using LibraNovel.Application.ViewModels.Novel;
 using LibraNovel.Application.ViewModels.Permission;
 using LibraNovel.Application.ViewModels.Rating;
 using LibraNovel.Application.ViewModels.Role;
+using LibraNovel.Application.ViewModels.Transaction;
 using LibraNovel.Application.ViewModels.User;
 using LibraNovel.Application.ViewModels.UsersRoles;
 using LibraNovel.Domain.Models;
@@ -80,6 +81,10 @@ namespace LibraNovel.Application.Mappers
             CreateMap<CreateCardViewModel, Card>();
             CreateMap<Card, CardResponse>();
             CreateMap<UpdateCardViewModel, Card>();
+
+            //Mapping transaction
+            CreateMap<CreateTransactionViewModel, Transaction>();
+            CreateMap<Transaction, TransactionResponse>();
         }
     }
 }

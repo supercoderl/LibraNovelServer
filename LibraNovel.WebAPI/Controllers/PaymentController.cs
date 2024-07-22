@@ -1,4 +1,5 @@
 ﻿using LibraNovel.Application.Interfaces;
+using LibraNovel.Application.ViewModels.Payment;
 using LibraNovel.Application.ViewModels.Paypal;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,11 +10,13 @@ namespace LibraNovel.WebAPI.Controllers
     {
         private readonly IPaypalService _paypalService;
         private readonly IVnPayService _vnPayService;
+        private readonly IPayOsService _payOsService;
 
-        public PaymentController(IPaypalService paypalService, IVnPayService vnPayService)
+        public PaymentController(IPaypalService paypalService, IVnPayService vnPayService, IPayOsService payOsService)
         {
             _paypalService = paypalService;
             _vnPayService = vnPayService;
+            _payOsService = payOsService;
         }
 
 /*        [HttpPost("/authorize-paypal")]
@@ -50,6 +53,18 @@ namespace LibraNovel.WebAPI.Controllers
         public async Task<IActionResult> PayVnPay()
         {
             return Ok(await _vnPayService.Pay(false, true, false, "vn"));
+        }
+
+        [HttpPost("/pay-payos")]
+        public async Task<IActionResult> PayPayOS(CreatePayOSViewModel request)
+        {
+            return Ok(await _payOsService.CreateOrderPayOS(request));
+        }
+
+        [HttpPost("/cancel-payos")]
+        public async Task<IActionResult> CancelPayOS(long orderID)
+        {
+            return Ok(await _payOsService.CancelOrder(orderID));
         }
     }
 }

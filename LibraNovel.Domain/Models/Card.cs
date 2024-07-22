@@ -46,6 +46,9 @@ public partial class Card
     [Column(TypeName = "datetime")]
     public DateTime CreatedDate { get; set; }
 
+    [InverseProperty("Card")]
+    public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
+
     [ForeignKey("UserID")]
     [InverseProperty("Cards")]
     public virtual User User { get; set; }

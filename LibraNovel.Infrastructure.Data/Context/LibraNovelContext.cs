@@ -42,6 +42,8 @@ public partial class LibraNovelContext : DbContext
 
     public virtual DbSet<Token> Tokens { get; set; }
 
+    public virtual DbSet<Transaction> Transactions { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UsersRole> UsersRoles { get; set; }
@@ -297,6 +299,31 @@ public partial class LibraNovelContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.Tokens)
                 .HasForeignKey(d => d.UserID)
                 .HasConstraintName("FK_Token_Users");
+        });
+
+        modelBuilder.Entity<Transaction>(entity =>
+        {
+            entity.HasKey(e => e.TransactionID).HasName("PK__Transact__55433A4B74B860BB");
+
+            entity.ToTable("Transaction");
+
+            entity.Property(e => e.TransactionID).HasMaxLength(20);
+            entity.Property(e => e.Amount)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.Property(e => e.BankCode).HasMaxLength(10);
+            entity.Property(e => e.BankTranNo).HasMaxLength(20);
+            entity.Property(e => e.CardType).HasMaxLength(10);
+            entity.Property(e => e.Description).HasMaxLength(255);
+            entity.Property(e => e.ResponseCode).HasMaxLength(2);
+            entity.Property(e => e.TnxRef).HasMaxLength(20);
+            entity.Property(e => e.TransactionDate).HasMaxLength(255);
+            entity.Property(e => e.TransactionStatus).HasMaxLength(10);
+
+            entity.HasOne(d => d.Card).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.CardID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Cards_Transactions");
         });
 
         modelBuilder.Entity<User>(entity =>

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,7 +17,7 @@ namespace LibraNovel.Application.Libraries
         private SortedList<String, String> _requestData = new SortedList<String, String>(new VnPayCompare());
         private SortedList<String, String> _responseData = new SortedList<String, String>(new VnPayCompare());
 
-        public void AddRequestData(string key, string value)
+        public void AddRequestData(string key, string? value)
         {
             if (!String.IsNullOrEmpty(value))
             {
@@ -47,7 +48,7 @@ namespace LibraNovel.Application.Libraries
 
         #region Request
 
-        public string CreateRequestUrl(string baseUrl, string vnp_HashSecret)
+        public string CreateRequestUrl(string? baseUrl, string? vnp_HashSecret)
         {
             StringBuilder data = new StringBuilder();
             foreach (KeyValuePair<string, string> kv in _requestData)
@@ -135,23 +136,18 @@ namespace LibraNovel.Application.Libraries
             return hash.ToString();
         }
 
-/*        public static string GetIpAddress()
+        public static string GetIpAddress()
         {
-            string ipAddress;
-            try
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
             {
-                ipAddress = HttpContext.Current.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
-
-                if (string.IsNullOrEmpty(ipAddress) || (ipAddress.ToLower() == "unknown") || ipAddress.Length > 45)
-                    ipAddress = HttpContext.Current.Request.ServerVariables["REMOTE_ADDR"];
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
             }
-            catch (Exception ex)
-            {
-                ipAddress = "Invalid IP:" + ex.Message;
-            }
-
-            return ipAddress;
-        }*/
+            throw new Exception("No network adapters with an IPv4 address in the system!");
+        }
     }
 
     public class VnPayCompare : IComparer<string>
