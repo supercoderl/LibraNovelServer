@@ -2,6 +2,7 @@
 using LibraNovel.Application.ViewModels.Paypal;
 using LibraNovel.Application.Wrappers;
 using Net.payOS.Types;
+using Stripe.Checkout;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,5 +27,11 @@ namespace LibraNovel.Application.Interfaces
     {
         Task<Response<CreatePaymentResult>> CreateOrderPayOS(CreatePayOSViewModel request);
         Task<Response<PaymentLinkInformation>> CancelOrder(long orderID);
+    }
+
+    public interface IStripeService
+    {
+        Task<Response<Session>> CreateOrderStripe(SessionStripe request);
+        Task<Response<Session>> RetrieveSession(string id);
     }
 }

@@ -11,8 +11,6 @@ namespace LibraNovel.Application.ViewModels.Payment
         public string ProductName {  get; set; }
         public string Description { get; set; }
         public int Price { get; set; }
-        public string ReturnUrl { get; set; }
-        public string CancelUrl { get; set; }
     }
 
     public class OrderInfo
@@ -27,5 +25,16 @@ namespace LibraNovel.Application.ViewModels.Payment
         public long PaymentTranId { get; set; }
         public string BankCode { get; set; }
         public string PayStatus { get; set; }
+    }
+
+    public class SessionStripe
+    {
+        public long Amount { get; set; }
+        public string Currency {  get; set; }
+        public string Name { get; set; }
+        public string? Description { get; set; }
+        public int Quantity { get; set; }
+        public string Mode { get; set; }
+        public string? CustomerEmail { get; set; }
     }
 }

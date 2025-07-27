@@ -43,10 +43,11 @@ namespace LibraNovel.Infrastructure.IoC
             services.AddScoped<ICacheService, CacheService>();
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IPaypalService, PaypalService>();
-            services.AddScoped<ICardService, CardService>();
+            services.AddScoped<ICardService, Application.Services.CardService>();
             services.AddScoped<IVnPayService, VnPayService>();
             services.AddScoped<ITransactionService, TransactionService>();
             services.AddScoped<IPayOsService, PayOsService>();
+            services.AddScoped<IStripeService, StripeService>();
         }
 
         public static void AddDatabaseServices(this IServiceCollection services, IConfiguration configuration)

@@ -16,6 +16,8 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Stripe.Checkout;
+using Stripe;
 
 namespace LibraNovel.Application.Services
 {
@@ -482,7 +484,14 @@ namespace LibraNovel.Application.Services
             ItemData item = new ItemData(request.ProductName, 1, request.Price);
             List<ItemData> items = new List<ItemData>();
             items.Add(item);
-            PaymentData paymentData = new PaymentData(orderCode, request.Price, request.Description, items, request.CancelUrl, request.ReturnUrl);
+            PaymentData paymentData = new PaymentData(
+                orderCode, 
+                request.Price, 
+                request.Description, 
+                items, 
+                _configuration["PayOSConfiguration:CancelURL"] ?? throw new Exception("Cannot find environment"), 
+                _configuration["PayOSConfiguration:ReturnURL"] ?? throw new Exception("Cannot find environment")
+            );
 
             CreatePaymentResult createPayment = await _payOS.createPaymentLink(paymentData);
 
@@ -500,6 +509,70 @@ namespace LibraNovel.Application.Services
             {
                 Succeeded = true,
                 Data = paymentLinkInformation
+            };
+        }
+    }
+
+    public class StripeService : IStripeService
+    {
+        private readonly SessionService _sessionService;
+        private readonly IConfiguration _configuration;
+
+        public StripeService(IConfiguration configuration)
+        {
+            StripeConfiguration.ApiKey = configuration["StripeConfiguration:SecretKey"];
+            _sessionService = new SessionService();
+            _configuration = configuration;
+        }
+
+        public async Task<Response<Session>> CreateOrderStripe(SessionStripe request)
+        {
+            await Task.CompletedTask;
+
+            var options = new SessionCreateOptions
+            {
+                SuccessUrl = _configuration["StripeConfiguration:ReturnURL"],
+                CancelUrl = _configuration["StripeConfiguration:CancelURL"],
+                LineItems = new List<SessionLineItemOptions>
+                {
+                    new SessionLineItemOptions
+                    {
+                        PriceData = new SessionLineItemPriceDataOptions
+                        {
+                            UnitAmount = request.Amount,
+                            Currency = request.Currency,
+                            ProductData = new SessionLineItemPriceDataProductDataOptions
+                            {
+                                Name = request.Name,
+                                Description = request.Description
+                            }
+                        },
+                        Quantity = request.Quantity
+                    },
+                },
+                Mode = request.Mode,
+                CustomerEmail = request.CustomerEmail
+            };
+
+            var session = _sessionService.Create(options);
+
+            return new Response<Session>
+            {
+                Succeeded = true,
+                Data = session
+            };
+        }
+
+        public async Task<Response<Session>> RetrieveSession(string id)
+        {
+            await Task.CompletedTask;
+
+            var result = _sessionService.Get(id);
+
+            return new Response<Session>
+            {
+                Succeeded = true,
+                Data = result
             };
         }
     }

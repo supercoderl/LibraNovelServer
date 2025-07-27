@@ -11,12 +11,14 @@ namespace LibraNovel.WebAPI.Controllers
         private readonly IPaypalService _paypalService;
         private readonly IVnPayService _vnPayService;
         private readonly IPayOsService _payOsService;
+        private readonly IStripeService _stripeService;
 
-        public PaymentController(IPaypalService paypalService, IVnPayService vnPayService, IPayOsService payOsService)
+        public PaymentController(IPaypalService paypalService, IVnPayService vnPayService, IPayOsService payOsService, IStripeService stripeService)
         {
             _paypalService = paypalService;
             _vnPayService = vnPayService;
             _payOsService = payOsService;
+            _stripeService = stripeService;
         }
 
 /*        [HttpPost("/authorize-paypal")]
@@ -65,6 +67,18 @@ namespace LibraNovel.WebAPI.Controllers
         public async Task<IActionResult> CancelPayOS(long orderID)
         {
             return Ok(await _payOsService.CancelOrder(orderID));
+        }
+
+        [HttpPost("/pay-stripe")]
+        public async Task<IActionResult> PayStripe(SessionStripe request)
+        {
+            return Ok(await _stripeService.CreateOrderStripe(request));
+        }
+
+        [HttpGet("/retrieve-stripe")]
+        public async Task<IActionResult> RetrieveStripe(string id)
+        {
+            return Ok(await _stripeService.RetrieveSession(id));
         }
     }
 }
